@@ -329,18 +329,87 @@ function showLine(){ var c=narr.cur; hudState.who=c?c.who:''; hudState.line=c?c.
 H.say = function(lines,o){ o=o||{}; if(typeof lines==='string') lines=[lines];
   if(o.interrupt){ narr.q.length=0; narr.cur=null; if(window.speechSynthesis) try{ speechSynthesis.cancel(); }catch(e){} }
   var who=o.who===undefined?'DEAN LLOYD':o.who;
-  lines.forEach(function(l){ narr.q.push({text:l,who:who,voice:o.voice===undefined?(who==='DEAN LLOYD'):o.voice,hold:o.hold}); }); };
+  lines.forEach(function(l){ narr.q.push({text:l,who:who,voice:o.voice===undefined?(who==='DEAN LLOYD'):o.voice,hold:o.hold,at:o.at}); }); };
 // one-shot narration when the player first enters a box: {id, x1,z1,x2,z2, lines, when(), interrupt}
-H.narrate = function(n){ return H.zone({x1:n.x1,z1:n.z1,x2:n.x2,z2:n.z2,once:n.once!==false,when:n.when,enter:function(){ H.say(n.lines,{interrupt:n.interrupt,who:n.who}); if(n.then) n.then(); }}); };
+H.narrate = function(n){ return H.zone({x1:n.x1,z1:n.z1,x2:n.x2,z2:n.z2,once:n.once!==false,when:n.when,enter:function(){ H.say(n.lines,{interrupt:n.interrupt,who:n.who,at:n.at}); if(n.then) n.then(); }}); };
+// brass speaker grilles the Dean speaks through: they glow while her line plays (H.say(lines,{at:id}))
+var grilles={};
+H.grille = function(id,x,y,z,ry){ var m=H.plane(0.22,0.14,H.glow(0xb8873b,0.05),x,y,z,ry); grilles[id]={mesh:m,x:x,z:z,y:y}; return m; };
 H.voice = function(on){ narr.voice=on===undefined?!narr.voice:on; if(!narr.voice && window.speechSynthesis) try{ speechSynthesis.cancel(); }catch(e){} return narr.voice; };
 function narrTick(dt){
-  if(!narr.cur && narr.q.length){ narr.cur=narr.q.shift(); narr.left=narr.cur.hold||(1.6+narr.cur.text.length*0.066); narr.max=narr.left*2.6; if(narr.cur.voice) speak(narr.cur.text); showLine(); }
+  if(!narr.cur && narr.q.length){ narr.cur=narr.q.shift(); narr.left=narr.cur.hold||(1.6+narr.cur.text.length*0.066); narr.max=narr.left*2.6; if(narr.cur.voice) speak(narr.cur.text); showLine();
+    var gr=narr.cur.at&&grilles[narr.cur.at]; if(gr) sfx.noise(0.25,2400,0.12,{type:'bandpass',q:1.5,x:gr.x,z:gr.z,y:gr.y,decay:0.5}); }
   else if(narr.cur){ narr.left-=dt; narr.max-=dt;
+    var g2=narr.cur.at&&grilles[narr.cur.at]; if(g2) g2.mesh.material.emissiveIntensity=0.12+0.48*Math.abs(Math.sin(H.t*8.5+Math.sin(H.t*3.1)));
     var talking=narr.cur.voice && narr.voice && window.speechSynthesis && speechSynthesis.speaking;
-    if((narr.left<=0 && !talking) || narr.max<=0){ narr.cur=null; if(!narr.q.length) showLine(); } }
+    if((narr.left<=0 && !talking) || narr.max<=0){ if(g2) g2.mesh.material.emissiveIntensity=0.05; narr.cur=null; if(!narr.q.length) showLine(); } }
 }
 var scareT=0;
 H.scare = function(txt,secs){ hudState.scare=txt; scareEl.textContent=txt; scareEl.style.display='block'; scareT=secs||1.6; };
+
+// ---------- show helpers ----------
+H.flick = function(t,hz,duty){ var p=(t*Math.min(hz||2,3))%1; return p<(duty||0.5)?1:0.15; };   // flicker, capped at 3 Hz for photosensitivity
+var _hv=new THREE.Vector3(), _fv=new THREE.Vector3(), _dv=new THREE.Vector3();
+H.headPos = function(){ return camera.getWorldPosition(_hv); };
+// is the player looking at (x,y,z) from within maxM meters? cos = how tight (0.95 ~ 18 degrees)
+H.gaze = function(x,y,z,maxM,cos){ var h=H.headPos(); _dv.set(x*SC-h.x,y-h.y,z*SC-h.z); var L=_dv.length(); if(L>(maxM||3)) return false;
+  camera.getWorldDirection(_fv); return _fv.dot(_dv.divideScalar(L||1))>(cos||0.95); };
+// the "use" action (Enter, VR trigger or A) while standing in a box
+H.onUse = H.onSkip;
+H.useIn = function(x1,z1,x2,z2,fn){ H.onSkip(function(){ if(H.inBox(x1,z1,x2,z2)) fn(); }); };
+// cue timeline: H.show([[0,fn],[1.5,fn]...]) -> {go(), running(), stop()}
+H.show = function(cues){ var st={t:-1,i:0}; st.go=function(){ st.t=0; st.i=0; }; st.running=function(){ return st.t>=0; }; st.stop=function(){ st.t=-1; };
+  H.onUpdate(function(dt){ if(st.t<0) return; st.t+=dt; while(st.i<cues.length && cues[st.i][0]<=st.t){ cues[st.i][1](); st.i++; } if(st.i>=cues.length) st.t=-1; }); return st; };
+// additive, unlit, starts invisible: holograms, Pepper's-ghost figures, projections (animate .opacity)
+H.holoMat = function(tex,color){ return new THREE.MeshBasicMaterial({map:tex||null,color:color||0xffffff,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}); };
+// bake static meshes that share one material into a single draw call (r128 core has no BufferGeometryUtils)
+H.merge = function(meshes,mat){ if(!meshes.length) return null; var pos=[],nor=[],uv=[];
+  meshes.forEach(function(m){ m.updateMatrixWorld(true); var g=m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone(); g.applyMatrix4(m.matrixWorld);
+    pos.push(g.attributes.position.array); nor.push(g.attributes.normal.array); uv.push(g.attributes.uv?g.attributes.uv.array:new Float32Array(g.attributes.position.count*2));
+    if(m.parent) m.parent.remove(m); });
+  function cat(arrs){ var n=0; arrs.forEach(function(a){ n+=a.length; }); var o=new Float32Array(n), k=0; arrs.forEach(function(a){ o.set(a,k); k+=a.length; }); return o; }
+  var geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(cat(pos),3)); geo.setAttribute('normal',new THREE.BufferAttribute(cat(nor),3)); geo.setAttribute('uv',new THREE.BufferAttribute(cat(uv),2));
+  var mm=new THREE.Mesh(geo,mat||meshes[0].material); scene.add(mm); return mm; };
+H.party = (function(){ try{ return (new URLSearchParams(location.search).get('party')||'').slice(0,24).toUpperCase(); }catch(e){ return ''; } })();   // ?party=Smith personalizes signage
+H.stay = {suites:{}};   // shared show state (which suites the party has opened, etc.)
+
+// hotel suite door in a wall opening (x1,z1)-(x2,z2) with a keycard reader.
+// o: {approach:+1|-1 (+1: guests stand on the right-hand side of x1->x2 as drawn on the north-up plan; a door drawn west->east with approach +1 is entered from the south), plate:[lines], num, ready(), onOpen(), autoClose:true}
+// Opens on USE within 1.2 m while looking at it, after 1.5 s of looking, or after 4 s standing at it (so nobody gets stuck).
+H.suiteDoor = function(o){
+  var dx=o.x2-o.x1, dz=o.z2-o.z1, Ls=Math.hypot(dx,dz), L=Ls*SC, ux=dx/Ls, uz=dz/Ls, nx=-uz, nz=ux, sgn=o.approach||1, th=-Math.atan2(dz,dx);
+  var leafMat=o.mat||H.mat.door, two=L>1.1, hinges=[];
+  function hinge(x,z,base,w,flip){ var g=H.group(x,z,base); var leaf=new THREE.Mesh(new THREE.BoxGeometry(w,2.13,0.05),leafMat); leaf.position.set(w/2,1.065,0); g.add(leaf);
+    var lv=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.025,0.05),H.mat.brass); lv.position.set(w-0.1,1.0,0.05*sgn*flip); g.add(lv); hinges.push({g:g,base:base,flip:flip}); }
+  if(two){ hinge(o.x1,o.z1,th,L/2,1); hinge(o.x2,o.z2,th+Math.PI,L/2,-1); } else hinge(o.x1,o.z1,th,L,1);
+  var mx=(o.x1+o.x2)/2, mz=(o.z1+o.z2)/2, fo=0.09/SC*sgn;
+  H.box(L+0.12,0.08,0.22,H.mat.woodDark,mx,2.17,mz,th);
+  [[o.x1,o.z1],[o.x2,o.z2]].forEach(function(p){ H.box(0.06,2.13,0.22,H.mat.woodDark,p[0],1.065,p[1],th); });
+  var pm=new THREE.MeshLambertMaterial({map:H.textTexture(o.plate||[''],{w:384,h:128,fs:46,bg:'#1d1a16',fg:'#d9b76a',border:'#8a6a2a',bw:8})});
+  var plx=o.x2+ux*(0.28/SC)+nx*fo, plz=o.z2+uz*(0.28/SC)+nz*fo, faceRy=Math.atan2(nx*sgn,nz*sgn);
+  H.plane(0.3,0.1,pm,plx,1.52,plz,faceRy);
+  var rx=o.x2+ux*(0.2/SC)+nx*fo, rz=o.z2+uz*(0.2/SC)+nz*fo;
+  H.box(0.07,0.11,0.03,H.mat.brass,rx,1.12,rz,th);
+  var ringMat=new THREE.MeshBasicMaterial({color:0xf2efe6,fog:false}), ring=new THREE.Mesh(new THREE.TorusGeometry(0.03,0.007,8,24),ringMat);
+  ring.position.set(rx*SC+nx*sgn*0.02,1.12,rz*SC+nz*sgn*0.02); ring.rotation.y=faceRy; scene.add(ring);
+  var gate=H.gate(o.x1,o.z1,o.x2,o.z2); map.doors.push([o.x1,o.z1,o.x2,o.z2]);
+  var ax=mx+nx*sgn*(1.0/SC), az=mz+nz*sgn*(1.0/SC), d={open:0,target:0,isOpen:false,gazeT:0,dwellT:0,warned:false,awayT:0,gate:gate,ring:ringMat,plate:pm};
+  d.setRing=function(c){ ringMat.color.setHex(c); };
+  d.openDoor=function(){ if(d.isOpen) return; if(o.ready && !o.ready()){ d.setRing(0xffb030); if(!d.warned){ d.warned=true; H.cap('The reader glows amber: MAKING UP ROOM.'); setTimeout(function(){ H.cap(''); },2200); } return; }
+    d.isOpen=true; d.target=1; gate.off=true; d.setRing(0x3fd47f); sfx.noise(0.12,300,0.7,{x:mx,z:mz}); sfx.tone(90,0.15,0.3,{x:mx,z:mz}); if(o.num) H.stay.suites[o.num]=true; if(o.onOpen) o.onOpen(); };
+  d.close=function(){ d.isOpen=false; d.target=0; gate.off=false; d.setRing(0xf2efe6); d.warned=false; d.gazeT=0; d.dwellT=0; };
+  H.onSkip(function(){ if(!d.isOpen && H.near(mx,mz,1.2) && H.gaze(mx,1.2,mz,1.6,0.8)) d.openDoor(); });
+  H.onUpdate(function(dt){
+    if(!d.isOpen){ var near=H.near(ax,az,1.0);
+      d.gazeT=H.gaze(rx,1.12,rz,1.6,0.9)?d.gazeT+dt:0; d.dwellT=near?d.dwellT+dt:0;
+      if(d.gazeT>1.5 || d.dwellT>4) d.openDoor();
+      if(!near && !H.near(mx,mz,2) && ringMat.color.getHex()===0xffb030){ d.setRing(0xf2efe6); d.warned=false; } }
+    else if(o.autoClose!==false){ d.awayT=H.near(mx,mz,12)?0:d.awayT+dt; if(d.awayT>20) d.close(); }
+    if(d.open!==d.target){ d.open+= (d.target>d.open?1:-1)*dt/1.2; d.open=Math.max(0,Math.min(1,d.open));
+      hinges.forEach(function(h){ h.g.rotation.y=h.base+h.flip*sgn*d.open*Math.PI*0.5; }); }
+  });
+  return d;
+};
 
 // ---------- controls ----------
 var keys={}, dragging=false, lastX=0,lastY=0, locked=false, showHelp=true, ovSave={};
