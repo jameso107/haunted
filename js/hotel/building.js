@@ -60,7 +60,7 @@ H.column(470,538);                         // C2
     g.strokeStyle='#2c6e28'; g.lineWidth=4; g.beginPath(); g.arc(64,96,14,0.2,Math.PI-0.2); g.stroke();
     g.strokeStyle='#3f9a3a'; g.lineWidth=5; g.beginPath(); g.moveTo(94,112); g.lineTo(112,82); g.stroke();
     g.fillStyle='#9a4fd0'; for(var i=0;i<5;i++){ g.beginPath(); g.arc(112+8*Math.cos(i*1.26),76+8*Math.sin(i*1.26),5,0,7); g.fill(); } });
-  H.plane(0.44,0.66,H.lam(0xffffff,{map:t}),330+11.4,1.25,553,Math.PI/2);
+  H.plane(0.44,0.66,H.lam(0xffffff,{map:t}),330+5.8,1.25,553,Math.PI/2);
 })();
 var tube=H.glow(0xe8f0ff,0.95);
 function fluor(x1,z1,x2,z2){ var dx=x2-x1, dz=z2-z1, len=Math.hypot(dx,dz)*SC;
@@ -98,7 +98,7 @@ H.doors = {
 // ---------- exit alcove (Z7): exit door with a crash bar and a narrow lit sidelight ----------
 H.door({x:345,z:62,face:'s',w:0.91,mat:M.metal,frameMat:M.dark,plate:['EXIT'],});
 H.box(0.8,0.05,0.06,M.metal,345,1.0,64);
-H.fixture(H.box(0.2,1.2,0.03,H.glow(0xcfd8e0,0.8),362.5,1.5,61.2));
+H.fixture(H.box(0.2,1.2,0.03,H.glow(0xcfd8e0,0.8),362.5,1.5,62.4));
 
 // ---------- stairwell: 0.28 m treads, 0.18 m risers, x 190 -> 134 ----------
 for(var i=0;i<8;i++){ H.box(0.28,0.18,1.3,H.lam(0x241d15),190-3.5-i*7,-0.09-i*0.18,565); }

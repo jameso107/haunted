@@ -258,6 +258,7 @@ H.route = function(path){
       var m=new THREE.Mesh(g,mat); m.position.set((a[0]+(b[0]-a[0])*f)*SC,0.02,(a[1]+(b[1]-a[1])*f)*SC);
       m.rotation.y=-Math.atan2(b[1]-a[1],b[0]-a[0]); arrows.add(m); }
   }
+  var merged=H.merge(arrows.children.slice(),mat); if(merged) arrows.add(merged);   // one draw call for all arrows
 };
 
 // ---------- audio (Web Audio; spatial when given {x,z}) ----------
