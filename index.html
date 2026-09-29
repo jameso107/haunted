@@ -76,6 +76,7 @@ var camera = new THREE.PerspectiveCamera(72, 1, 0.05, 60);
 var rig = new THREE.Group(); rig.add(camera); scene.add(rig);   // XR moves the rig; desktop leaves it at the origin
 renderer.xr.enabled = true;
 scene.add(new THREE.AmbientLight(0x323a52, 0.42));
+var ovLight = new THREE.HemisphereLight(0xfff4e0, 0x202028, 0); scene.add(ovLight);   // bird's-eye only
 
 // ---------- helpers ----------
 var solids = [];   // collision segments in meters {x1,z1,x2,z2}
@@ -89,7 +90,7 @@ var matDark  = new THREE.MeshLambertMaterial({color:0x141317});
 
 function wallMesh(x1,z1,x2,z2,h,mat,yBase){
   var dx=(x2-x1)*SC, dz=(z2-z1)*SC, len=Math.sqrt(dx*dx+dz*dz);
-  var m = new THREE.Mesh(new THREE.BoxGeometry(len,h,0.16), mat);
+  var m = new THREE.Mesh(new THREE.BoxGeometry(len,h,0.16,Math.max(1,Math.ceil(len/0.5)),Math.ceil(h/0.7),1), mat);   // Lambert lights per vertex: subdivide
   m.position.set((x1+x2)/2*SC,(yBase||0)+h/2,(z1+z2)/2*SC);
   m.rotation.y = -Math.atan2(dz,dx);
   scene.add(m); return m;
@@ -116,9 +117,9 @@ function figure(color,face){
 function plight(x,z,y,color,intensity,dist){ var L=new THREE.PointLight(color,intensity,dist||8,2); L.position.set(x*SC,y,z*SC); scene.add(L); return L; }
 
 // ---------- floor + ceiling ----------
-var floorM = new THREE.Mesh(new THREE.PlaneGeometry(27.5,25.0), new THREE.MeshLambertMaterial({color:0x1c1610}));
+var floorM = new THREE.Mesh(new THREE.PlaneGeometry(27.5,25.0,55,50), new THREE.MeshLambertMaterial({color:0x1c1610}));
 floorM.rotation.x=-Math.PI/2; floorM.position.set(15.4,0,13.7); scene.add(floorM);
-var ceil = new THREE.Mesh(new THREE.PlaneGeometry(27.5,25.0), new THREE.MeshLambertMaterial({color:0x0c0b0f}));
+var ceil = new THREE.Mesh(new THREE.PlaneGeometry(27.5,25.0,55,50), new THREE.MeshLambertMaterial({color:0x0c0b0f}));
 ceil.rotation.x=Math.PI/2; ceil.position.set(15.4,WALL_H,13.7); scene.add(ceil);
 
 // ---------- structural walls (from flow map) ----------
@@ -356,6 +357,7 @@ function toggleOverview(){
   overview=!overview;
   if(overview){ ovSave={p:pos.clone(),y:yaw,pt:pitch}; }
   else { pos.copy(ovSave.p); yaw=ovSave.y; pitch=ovSave.pt; }
+  scene.fog.density=overview?0.004:0.052; ovLight.intensity=overview?0.85:0;
 }
 
 // ---------- WebXR (Meta Quest) ----------
