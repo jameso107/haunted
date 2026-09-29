@@ -593,6 +593,7 @@ var clock=new THREE.Clock(), stEl=document.getElementById('station'), lastSt=nul
 var fwd=new THREE.Vector3(), up=new THREE.Vector3();
 function tick(){
   var dt=Math.min(clock.getDelta(),0.05), t=clock.elapsedTime;
+  if(H.fixedDt){ dt=H.fixedDt; t=H.fixedT=(H.fixedT||0)+dt; }   // offline rendering (?debug step) runs on a fixed clock
   H.t=t;
 
   if(renderer.xr.isPresenting){
@@ -693,6 +694,7 @@ H.run = function(){
     window.HAUNT={H:H,THREE:THREE,scene:scene,camera:camera,rig:rig,renderer:renderer,pos:pos,stations:stations,
       look:function(y,p){ yaw=y; pitch=p||0; }, go:H.teleport,
       begin:begin, skip:H.skip, lights:function(){ return lightCount; },
+      step:function(dt){ H.fixedDt=dt||1/30; tick(); }, overview:toggleOverview,
       state:function(){ return {x:pos.x/SC,z:pos.z/SC,yaw:yaw,xr:renderer.xr.isPresenting,line:hudState.line,stage:hudState.stage}; },
       // walk the route arrows through the real collision code; reports segments where a guest would get stuck
       walkRoute:function(path,step){ path=path||H.PATH||[]; step=step||0.05; var save=pos.clone(), stuck=[], opened=[];
