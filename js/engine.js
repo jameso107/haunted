@@ -154,6 +154,67 @@ H.spot = function(x,z,y,tx,tz,ty,color,intensity,dist,angle,pen){ lightCount++;
   L.target.position.set(tx*SC,ty,tz*SC); scene.add(L); scene.add(L.target); return L; };
 H.light = function(L){ lightCount++; scene.add(L); return L; };   // register any other light against the budget
 
+// ---------- camera feeds: CCTV monitors and mirrors (render-to-texture) ----------
+// Layer 5 is seen only by feeds: the player's stand-in, and ghosts that exist only on camera or in the glass.
+// (XR eye cameras use layers 1 and 2, so feed-only content must not use those.)
+var FEED=H.FEED_LAYER=5, feeds=[];
+H.feedOnly = function(obj){ obj.traverse(function(o){ o.layers.set(FEED); }); return obj; };
+// fixed camera: {x,z,y, tx,tz,ty, fov, w,h (px), every (frames), range (m from sx,sz or x,z)}
+H.feed = function(o){ var w=o.w||320, h=o.h||240, rt=new THREE.WebGLRenderTarget(w,h);
+  var cam=new THREE.PerspectiveCamera(o.fov||62,w/h,0.05,30); cam.layers.enable(FEED);
+  cam.position.set(o.x*SC,o.y==null?2.35:o.y,o.z*SC); cam.lookAt(o.tx*SC,o.ty==null?1.2:o.ty,o.tz*SC);
+  var f={rt:rt,cam:cam,tex:rt.texture,every:o.every||3,n:0,x:o.sx==null?o.x:o.sx,z:o.sz==null?o.z:o.sz,range:o.range||8,on:true};
+  feeds.push(f); return f; };
+// a monitor showing a feed: CRT-ish tint and scanlines
+H.monitor = function(f,w,h,x,y,z,ry,o){ o=o||{};
+  var mat=new THREE.ShaderMaterial({uniforms:{tex:{value:f.tex},t:{value:0},tint:{value:new THREE.Color(o.tint||0xcfe8d8)}},
+    vertexShader:'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+    fragmentShader:'uniform sampler2D tex; uniform float t; uniform vec3 tint; varying vec2 vUv; void main(){ vec3 c=texture2D(tex,vUv).rgb; float g=dot(c,vec3(0.3,0.59,0.11));'+
+      'float sl=0.82+0.18*sin(vUv.y*480.0+t*6.0); float n=fract(sin(dot(vUv*t,vec2(12.9898,78.233)))*43758.5453); gl_FragColor=vec4(tint*(g*1.35*sl+n*0.06),1.0); }'});
+  var m=H.plane(w,h,mat,x,y,z,ry); f.screenMat=mat; return m; };
+// mirror on a wall: {x,z,y,w,h,ry (facing, as H.plane), res, tint, range}
+var tmpV=[new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3()], rotM=new THREE.Matrix4(), plane4=new THREE.Plane(), clip4=new THREE.Vector4(), q4=new THREE.Vector4();
+H.mirror = function(o){ var res=o.res||512, rt=new THREE.WebGLRenderTarget(res,res), tm=new THREE.Matrix4();
+  var cam=new THREE.PerspectiveCamera(); cam.layers.enable(FEED);
+  var mat=new THREE.ShaderMaterial({uniforms:{tex:{value:rt.texture},tm:{value:tm},tint:{value:new THREE.Color(o.tint||0xc9cfd6)}},
+    vertexShader:'uniform mat4 tm; varying vec4 vP; void main(){ vP=tm*vec4(position,1.0); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+    fragmentShader:'uniform sampler2D tex; uniform vec3 tint; varying vec4 vP; void main(){ gl_FragColor=vec4(texture2DProj(tex,vP).rgb*tint,1.0); }'});
+  var mesh=H.plane(o.w||0.8,o.h||1.2,mat,o.x,o.y==null?1.45:o.y,o.z,o.ry||0);
+  var f={rt:rt,cam:cam,tex:rt.texture,every:o.every||1,n:0,x:o.x,z:o.z,range:o.range||7,on:true,mesh:mesh,mat:mat};
+  f.update=function(view){   // Reflector-style virtual camera with an oblique near plane at the glass
+    var mp=tmpV[0].setFromMatrixPosition(mesh.matrixWorld), cp=tmpV[1].setFromMatrixPosition(view.matrixWorld);
+    rotM.extractRotation(mesh.matrixWorld); var n=tmpV[2].set(0,0,1).applyMatrix4(rotM);
+    var v=tmpV[3].subVectors(mp,cp); if(v.dot(n)>0) return false;
+    v.reflect(n).negate().add(mp);
+    rotM.extractRotation(view.matrixWorld); var la=tmpV[4].set(0,0,-1).applyMatrix4(rotM).add(cp);
+    var tg=tmpV[5].subVectors(mp,la).reflect(n).negate().add(mp);
+    cam.position.copy(v); cam.up.set(0,1,0).applyMatrix4(rotM).reflect(n); cam.lookAt(tg);
+    cam.far=view.far; cam.updateMatrixWorld(); cam.projectionMatrix.copy(view.projectionMatrix);
+    tm.set(0.5,0,0,0.5, 0,0.5,0,0.5, 0,0,0.5,0.5, 0,0,0,1); tm.multiply(cam.projectionMatrix); tm.multiply(cam.matrixWorldInverse); tm.multiply(mesh.matrixWorld);
+    plane4.setFromNormalAndCoplanarPoint(n,mp); plane4.applyMatrix4(cam.matrixWorldInverse);
+    clip4.set(plane4.normal.x,plane4.normal.y,plane4.normal.z,plane4.constant);
+    var pm=cam.projectionMatrix, e=pm.elements;
+    q4.x=(Math.sign(clip4.x)+e[8])/e[0]; q4.y=(Math.sign(clip4.y)+e[9])/e[5]; q4.z=-1.0; q4.w=(1.0+e[10])/e[14];
+    clip4.multiplyScalar(2.0/clip4.dot(q4)); e[2]=clip4.x; e[6]=clip4.y; e[10]=clip4.z+1.0; e[14]=clip4.w;
+    return true; };
+  feeds.push(f); return f; };
+var avatar=null;   // the player as feeds and mirrors see them
+function renderFeeds(){
+  if(!feeds.length) return;
+  var view=renderer.xr.isPresenting?renderer.xr.getCamera(camera):camera, xrE=renderer.xr.enabled, hv=hud.visible, did=false;
+  for(var i=0;i<feeds.length;i++){ var f=feeds[i];
+    if(!f.on || !H.near(f.x,f.z,f.range) || (f.n++)%f.every) continue;
+    if(f.update && !f.update(view)) continue;
+    if(!did){ did=true; renderer.xr.enabled=false; hud.visible=false;
+      avatar.position.set(pos.x,0,pos.z); avatar.rotation.y=yaw; avatar.visible=true; }
+    if(f.mesh) f.mesh.visible=false;
+    renderer.setRenderTarget(f.rt); renderer.render(scene,f.cam);
+    if(f.mesh) f.mesh.visible=true;
+    if(f.screenMat) f.screenMat.uniforms.t.value=H.t||0;
+  }
+  if(did){ renderer.setRenderTarget(null); renderer.xr.enabled=xrE; hud.visible=hv; }
+}
+
 // ---------- world state ----------
 var pos = H.pos = new THREE.Vector3(0,EYE,0);
 var yaw=0, pitch=0, started=false, overview=false;
@@ -161,6 +222,7 @@ H.player = function(){ return {x:pos.x/SC, z:pos.z/SC, yaw:yaw}; };
 H.near = function(x,z,r){ return Math.hypot(pos.x-x*SC,pos.z-z*SC) < r; };   // r in meters
 H.inBox = function(x1,z1,x2,z2){ var px=pos.x/SC, pz=pos.z/SC; return px>Math.min(x1,x2)&&px<Math.max(x1,x2)&&pz>Math.min(z1,z2)&&pz<Math.max(z1,z2); };
 H.startAt = function(x,z,y){ pos.set(x*SC,EYE,z*SC); yaw=y||0; };
+H.teleport = function(x,z,y){ pos.x=x*SC; pos.z=z*SC; if(y!==undefined) yaw=y; xr.init=false; };   // in VR the rig re-anchors next frame
 var updaters=[], beginFns=[], skipFns=[];
 H.onUpdate = function(fn){ updaters.push(fn); };
 H.onBegin = function(fn){ beginFns.push(fn); };
@@ -494,6 +556,7 @@ function tick(){
     if(sc.x!=null && !H.near(sc.x,sc.z,sc.range)) continue;
     if((sc.n++)%sc.every===0){ sc.draw(sc.ctx,t,sc.canvas.width,sc.canvas.height); sc.tex.needsUpdate=true; } }
   narrTick(dt);
+  renderFeeds();
   if(scareT>0){ scareT-=dt; if(scareT<=0){ scareEl.style.display='none'; hudState.scare=''; } }
 
   // audio listener follows the head
@@ -524,6 +587,7 @@ function tick(){
 
 // ---------- run (after content scripts have built the hotel) ----------
 H.run = function(){
+  avatar=H.feedOnly(H.figure(0x3b4658,0xd9c2a4)); avatar.visible=false;   // guests see themselves only on camera and in mirrors
   // bounds from structural walls
   var xs=[],zs=[]; map.walls.concat(map.curtains).forEach(function(w){ xs.push(w[0],w[2]); zs.push(w[1],w[3]); });
   if(xs.length){ B.x1=Math.min.apply(null,xs); B.x2=Math.max.apply(null,xs); B.z1=Math.min.apply(null,zs); B.z2=Math.max.apply(null,zs); }
@@ -556,7 +620,7 @@ H.run = function(){
   renderer.setAnimationLoop(tick);
   if(/[?&]debug\b/.test(location.search)){   // test hook: drive the walkthrough from the console
     window.HAUNT={H:H,THREE:THREE,scene:scene,camera:camera,rig:rig,renderer:renderer,pos:pos,stations:stations,
-      look:function(y,p){ yaw=y; pitch=p||0; }, go:function(x,z,y){ pos.x=x*SC; pos.z=z*SC; if(y!==undefined) yaw=y; },
+      look:function(y,p){ yaw=y; pitch=p||0; }, go:H.teleport,
       begin:begin, skip:H.skip, lights:function(){ return lightCount; },
       state:function(){ return {x:pos.x/SC,z:pos.z/SC,yaw:yaw,xr:renderer.xr.isPresenting,line:hudState.line,stage:hudState.stage}; }};
   }
