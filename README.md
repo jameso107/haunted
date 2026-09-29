@@ -19,6 +19,24 @@ Walk the route before you build it: the elevator strike, Arrival 1950, the Prome
 
 Best experienced on desktop Chrome / Edge / Firefox, with headphones.
 
+## VR (Meta Quest 2 / 3)
+
+Open the site in the Quest's built-in **Meta Quest Browser** and press **Enter VR** (on the start screen, or bottom-right once you're walking). WebXR needs HTTPS, so use the Vercel URL rather than a LAN IP.
+
+| Controller | Action |
+| --- | --- |
+| Left thumbstick | Walk (head-relative) |
+| Right thumbstick ←/→ | Snap turn 30° |
+| Right trigger or **A** | Skip the elevator ride |
+| **B** / **Y** | Toggle route arrows |
+| **X** | Toggle the wrist map (left controller) |
+
+Station names, captions, and scares appear on a panel just below your line of sight. Play standing or seated: seated players are raised to standing eye height when the session starts.
+
+To test on the headset against your local copy, connect it over USB and forward the port so the page loads as `localhost` (a secure context): `adb reverse tcp:8000 tcp:8000`, then open http://localhost:8000 in the Quest browser.
+
+`?debug` in the URL exposes `window.HAUNT` (scene, player position, teleport helpers) for testing from the console.
+
 ## Project structure
 
 This is a fully static site — no build step required.
