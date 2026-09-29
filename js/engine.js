@@ -62,6 +62,7 @@ var solids = H.solids = [];   // collision segments in meters {x1,z1,x2,z2,off}
 var map = H.map = {walls:[], curtains:[], doors:[]};   // for the minimap and bounds
 function seg(x1,z1,x2,z2){ var s={x1:x1*SC,z1:z1*SC,x2:x2*SC,z2:z2*SC,off:false}; solids.push(s); return s; }
 H.seg = seg;
+H.gate = function(x1,z1,x2,z2){ var g=seg(x1,z1,x2,z2); g.door=true; return g; };   // a barrier that opens on cue: set .off=true to let guests through
 function wallMesh(x1,z1,x2,z2,h,mat,yBase,thick){
   var dx=(x2-x1)*SC, dz=(z2-z1)*SC, len=Math.sqrt(dx*dx+dz*dz);
   var geo=new THREE.BoxGeometry(len,h,thick||0.16,Math.max(1,Math.ceil(len/0.5)),Math.ceil(h/0.7),1);   // Lambert lights per vertex: subdivide
@@ -244,6 +245,7 @@ var badges=[];
 // route arrows along a polyline of [x,z] points
 var arrows = new THREE.Group(); scene.add(arrows);
 H.route = function(path){
+  H.PATH = path;
   var tex=(function(){ var c=document.createElement('canvas'); c.width=128;c.height=128; var g=c.getContext('2d');
     g.strokeStyle='#3fd47f'; g.lineWidth=16; g.lineCap='round'; g.beginPath();
     g.moveTo(22,64); g.lineTo(96,64); g.moveTo(70,36); g.lineTo(100,64); g.lineTo(70,92); g.stroke();
@@ -622,7 +624,17 @@ H.run = function(){
     window.HAUNT={H:H,THREE:THREE,scene:scene,camera:camera,rig:rig,renderer:renderer,pos:pos,stations:stations,
       look:function(y,p){ yaw=y; pitch=p||0; }, go:H.teleport,
       begin:begin, skip:H.skip, lights:function(){ return lightCount; },
-      state:function(){ return {x:pos.x/SC,z:pos.z/SC,yaw:yaw,xr:renderer.xr.isPresenting,line:hudState.line,stage:hudState.stage}; }};
+      state:function(){ return {x:pos.x/SC,z:pos.z/SC,yaw:yaw,xr:renderer.xr.isPresenting,line:hudState.line,stage:hudState.stage}; },
+      // walk the route arrows through the real collision code; reports segments where a guest would get stuck
+      walkRoute:function(path,step){ path=path||H.PATH||[]; step=step||0.05; var save=pos.clone(), stuck=[], opened=[];
+        solids.forEach(function(sd){ if(sd.door && !sd.off){ sd.off=true; opened.push(sd); } });   // doors that open on cue count as open
+        if(!path.length) return {stuck:['no PATH']};
+        pos.set(path[0][0]*SC,EYE,path[0][1]*SC);
+        for(var i=1;i<path.length;i++){ var tx=path[i][0]*SC, tz=path[i][1]*SC, n=0, best=1e9, still=0;
+          while(n++<4000){ var dx=tx-pos.x, dz=tz-pos.z, d=Math.hypot(dx,dz); if(d<0.12) break;
+            pos.x+=dx/d*step; pos.z+=dz/d*step; collide();
+            if(d<best-0.002){ best=d; still=0; } else if(++still>60){ stuck.push({seg:i,from:path[i-1],to:path[i],at:[Math.round(pos.x/SC),Math.round(pos.z/SC)],left:+(d/SC).toFixed(1)}); pos.set(tx,EYE,tz); break; } } }
+        opened.forEach(function(sd){ sd.off=false; }); pos.copy(save); return {segments:path.length-1,stuck:stuck}; }};
   }
 };
 })();

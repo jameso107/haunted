@@ -40,7 +40,7 @@ H.box((526-464)*SC,H.WALL_H,(241-214)*SC,H.lam(0x0b0b0d),495,H.WALL_H/2,227.5);
 H.elevator = {
   doorL: H.box(1.3,2.3,0.1,M.metal,471.2,1.15,465),
   doorR: H.box(1.3,2.3,0.1,M.metal,503.8,1.15,465),
-  solid: H.seg(455,465,520,465),
+  solid: H.gate(455,465,520,465),
   open: 0,                       // 0 closed .. 1 open
   light: H.plight(488,428,2.4,0xffd9a0,1.0,6),
   panel: H.box(1.7,0.05,1.1,H.glow(0xfff1cf,0.7),488,2.56,428)
