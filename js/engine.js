@@ -317,6 +317,8 @@ H.ambience = function(o){ var h={}; loopsOnBegin.push(function(){ var l=sfx.loop
 var capEl=document.getElementById('caption'), stageEl=document.getElementById('stage'), scareEl=document.getElementById('scare');
 var hudState={who:'',line:'',stage:'',scare:''};
 H.cap = function(txt){ hudState.stage=txt||''; stageEl.textContent=hudState.stage; };   // stage directions: italic, no speaker
+var flash={t:0,text:''};
+H.flash = function(txt,secs){ H.cap(txt); flash.text=txt; flash.t=secs||1.8; };   // a brief stage caption that clears itself (only if still showing) on the show clock
 var narr={q:[],cur:null,left:0,voice:true,v:null};
 function pickVoice(){ if(!window.speechSynthesis) return null; var vs=speechSynthesis.getVoices(); if(!vs.length) return null;
   var pref=/(Samantha|Moira|Serena|Karen|Tessa|Libby|Sonia|Hazel|Zira|Google UK English Female|Female)/i;
@@ -396,7 +398,7 @@ H.suiteDoor = function(o){
   var gate=H.gate(o.x1,o.z1,o.x2,o.z2); map.doors.push([o.x1,o.z1,o.x2,o.z2]);
   var ax=mx+nx*sgn*(1.0/SC), az=mz+nz*sgn*(1.0/SC), d={open:0,target:0,isOpen:false,gazeT:0,dwellT:0,warned:false,awayT:0,gate:gate,ring:ringMat,plate:pm};
   d.setRing=function(c){ ringMat.color.setHex(c); };
-  d.openDoor=function(){ if(d.isOpen) return; if(o.ready && !o.ready()){ d.setRing(0xffb030); if(!d.warned){ d.warned=true; H.cap('The reader glows amber: MAKING UP ROOM.'); setTimeout(function(){ H.cap(''); },2200); } return; }
+  d.openDoor=function(){ if(d.isOpen) return; if(o.ready && !o.ready()){ d.setRing(0xffb030); if(!d.warned){ d.warned=true; H.flash('The reader glows amber: MAKING UP ROOM.',2.2); } return; }
     d.isOpen=true; d.target=1; gate.off=true; d.setRing(0x3fd47f); sfx.noise(0.12,300,0.7,{x:mx,z:mz}); sfx.tone(90,0.15,0.3,{x:mx,z:mz}); if(o.num) H.stay.suites[o.num]=true; if(o.onOpen) o.onOpen(); };
   d.close=function(){ d.isOpen=false; d.target=0; gate.off=false; d.setRing(0xf2efe6); d.warned=false; d.gazeT=0; d.dwellT=0; };
   H.onSkip(function(){ if(!d.isOpen && H.near(mx,mz,1.2) && H.gaze(mx,1.2,mz,1.6,0.8)) d.openDoor(); });
@@ -427,8 +429,8 @@ window.addEventListener('keydown',function(e){
   if(e.code==='Tab'){ e.preventDefault(); toggleOverview(); }
   if(e.code==='KeyG'){ arrows.visible=!arrows.visible; }
   if(e.code==='KeyH'){ showHelp=!showHelp; document.getElementById('help').style.display=showHelp?'block':'none'; }
-  if(e.code==='KeyL'){ H.cap(H.houseLights()?'House lights on: the room as it really is':'Show mode'); setTimeout(function(){ H.cap(''); },1800); }
-  if(e.code==='KeyV'){ H.cap(H.voice()?'Dean Lloyd’s voice on':'Dean Lloyd’s voice off (captions stay)'); setTimeout(function(){ H.cap(''); },1600); }
+  if(e.code==='KeyL'){ H.flash(H.houseLights()?'House lights on: the room as it really is':'Show mode'); }
+  if(e.code==='KeyV'){ H.flash(H.voice()?'Dean Lloyd’s voice on':'Dean Lloyd’s voice off (captions stay)'); }
   if(e.code==='Enter' && started){ H.skip(); }
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].indexOf(e.code)>=0) e.preventDefault();
 });
@@ -553,8 +555,8 @@ function xrStep(dt){
   if(p.skip && !xr.prev.skip && started) H.skip();
   if(p.arrows && !xr.prev.arrows) arrows.visible=!arrows.visible;
   if(p.map && !xr.prev.map) wrist.visible=!wrist.visible;
-  if(p.house && !xr.prev.house){ H.cap(H.houseLights()?'House lights on':'Show mode'); setTimeout(function(){ H.cap(''); },1600); }
-  if(p.voice && !xr.prev.voice){ H.cap(H.voice()?'Dean Lloyd’s voice on':'Dean Lloyd’s voice off'); setTimeout(function(){ H.cap(''); },1600); }
+  if(p.house && !xr.prev.house){ H.flash(H.houseLights()?'House lights on':'Show mode'); }
+  if(p.voice && !xr.prev.voice){ H.flash(H.voice()?'Dean Lloyd’s voice on':'Dean Lloyd’s voice off'); }
   xr.prev=p;
 }
 function enterVR(){
@@ -629,6 +631,7 @@ function tick(){
     if(sc.x!=null && !H.near(sc.x,sc.z,sc.range)) continue;
     if((sc.n++)%sc.every===0){ sc.draw(sc.ctx,t,sc.canvas.width,sc.canvas.height); sc.tex.needsUpdate=true; } }
   narrTick(dt);
+  if(flash.t>0){ flash.t-=dt; if(flash.t<=0 && hudState.stage===flash.text) H.cap(''); }
   renderFeeds();
   if(scareT>0){ scareT-=dt; if(scareT<=0){ scareEl.style.display='none'; hudState.scare=''; } }
 

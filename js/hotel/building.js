@@ -11,7 +11,7 @@ var LCH = [[460,155,700,155],[700,155,700,210],[700,210,590,210],[540,210,460,21
 H.WALLS = [[220,100,295,100],[345,100,460,100],[220,100,220,390],[460,100,460,155],[460,210,460,245],
  [220,195,330,195],[330,195,330,245],[370,245,530,245],[530,210,530,245],[530,245,530,390],[190,390,215,390],[268,390,280,390],
  [318,390,610,390],[190,390,190,430],[190,460,190,545],[190,585,190,630],[190,630,610,630],
- [610,390,610,630],[430,390,430,465],[430,465,545,465],[545,390,545,414],[545,441,545,465],
+ [610,390,610,630],[430,390,430,465],[430,465,518,465],[543,465,545,465],[545,390,545,465],
  [70,415,190,415],[70,415,70,500],[70,500,190,500],[70,548,190,548],[70,582,190,582],
  [260,60,380,60],[260,60,260,100],[380,60,380,100]].concat(LCH);
 H.WALLS.forEach(function(w){
@@ -36,18 +36,18 @@ H.box((526-464)*SC,H.WALL_H,(241-214)*SC,H.lam(0x0b0b0d),495,H.WALL_H/2,227.5);
   H.cap2d(215,390,268,390,'#9cc4e8',H.WALL_H);
 })();
 
-// ---------- the building elevator: the accessible entrance, not a show effect. Doors on the east face (z 414-441) ----------
+// ---------- the building elevator: the accessible entrance, not a show effect. Doors on the SOUTH face at its east end (x 518-543) ----------
 H.elevator = {
-  doorN: H.box(0.1,2.13,0.54,M.metal,546,1.065,420.75),
-  doorS: H.box(0.1,2.13,0.54,M.metal,546,1.065,434.25),
-  solid: H.gate(545,414,545,441),
+  doorW: H.box(0.52,2.13,0.1,M.metal,524.25,1.065,466),
+  doorE: H.box(0.52,2.13,0.1,M.metal,536.75,1.065,466),
+  solid: H.gate(518,465,543,465),
   open: 0
 };
-H.box(0.06,2.25,1.2,M.dark,545.6,1.125,427.5);                                                    // frame
-H.box(0.04,0.2,0.1,M.metal,546.2,1.05,448); H.fixture(H.box(0.02,0.03,0.03,H.glow(0xfff1cf,0.9),546.8,1.07,448));   // call button
-H.sign(['ELEVATOR','ACCESSIBLE ENTRANCE'],{w:512,h:200,fs:48,bg:'#1d2a44',fg:'#f2efe6',boldFirst:true},0.6,0.24,546.3,2.4,427.5,Math.PI/2);
-H.map.doors.push([545,414,545,441]);
-H.onUpdate(function(){ var e=H.elevator; e.doorN.position.z=(420.75-e.open*13.5)*SC; e.doorS.position.z=(434.25+e.open*13.5)*SC; e.solid.off=e.open>0.8; });
+H.box(1.2,2.25,0.06,M.dark,530.5,1.125,465.6);                                                    // frame
+H.box(0.1,0.2,0.04,M.metal,515,1.05,466.2); H.fixture(H.box(0.03,0.03,0.02,H.glow(0xfff1cf,0.9),515,1.07,466.8));   // call button
+H.sign(['ELEVATOR','ACCESSIBLE ENTRANCE'],{w:512,h:200,fs:48,bg:'#1d2a44',fg:'#f2efe6',boldFirst:true},0.6,0.24,530.5,2.4,466.3,0);
+H.map.doors.push([518,465,543,465]);
+H.onUpdate(function(){ var e=H.elevator; e.doorW.position.x=(524.25-e.open*12.5)*SC; e.doorE.position.x=(536.75+e.open*12.5)*SC; e.solid.off=e.open>0.8; });
 
 // ---------- lounge (Z1): columns, perimeter fluorescents, furniture (verify positions) ----------
 H.column(330,553);                         // C1: the frog-mural column

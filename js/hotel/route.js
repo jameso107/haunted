@@ -24,9 +24,9 @@ H.station({n:0,x:260,z:595,name:'Arrival \u00B7 Hall of Guests',desc:'up the sta
 H.station({n:1,x:560,z:470,name:'The Front Desk',desc:'sign the register \u00B7 watch LOBBY CAM 2 \u00B7 take your key'});
 H.station({n:2,x:262,z:470,name:'Suite 1871 \u00B7 Angell',desc:'the night the house was wired \u00B7 watch the mirror, then the window'});
 H.station({n:3,x:276,z:250,name:'Suite 1876 \u00B7 Kleinstueck',desc:'the Preserve \u00B7 stay on the boards \u00B7 follow only the true letters'});
-H.station({n:4,x:484,z:340,name:'Suite 1912 \u00B7 Hinsdale',desc:'the oral examination \u00B7 answer with 1-2-3, or look at a button and press Enter'});
+H.station({n:4,x:484,z:340,name:'Suite 1912 \u00B7 Hinsdale',desc:'the oral examination \u00B7 look at a brass button and press Enter or the trigger (or 1-2-3)'});
 H.station({n:5,x:600,z:182,name:'Suite 1872 \u00B7 Palmer',desc:'one little door \u00B7 the lost bust speaks'});
-H.station({n:6,x:320,z:84,name:'Check-out',desc:'late minutes assessed \u00B7 Enter at the door to check in again'});
+H.station({n:6,x:320,z:84,name:'Check-out',desc:'late minutes assessed \u00B7 Enter or trigger at the door to check in again'});
 
 // placeholder welcome until lobby.js takes over the front desk
 if(!H.lobbyWelcome) H.narrate({x1:545,z1:420,x2:610,z2:500,lines:['Good evening. I am Dean Lloyd, and this is my hotel. Do sign the register.']});
