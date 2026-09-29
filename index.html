@@ -24,7 +24,6 @@
   #cross{top:50%;left:50%;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.75);transform:translate(-50%,-50%);}
   #minimap{position:absolute;top:14px;right:14px;background:rgba(12,11,9,.82);border:1px solid #4a4436;border-radius:8px;}
   #overlay{position:absolute;inset:0;background:radial-gradient(ellipse at center,#16111a 0%,#050408 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#e8e2d4;text-align:center;cursor:pointer;padding:0 16px;}
-  #overlay .kicker{font-size:12px;letter-spacing:4px;color:#b9b2a2;margin-bottom:10px;}
   #overlay h1{font-family:Georgia,serif;font-size:34px;letter-spacing:3px;color:#f6a13c;margin:0 0 6px;}
   #overlay h2{font-family:Georgia,serif;font-style:italic;font-weight:400;font-size:16px;color:#c9c2b2;margin:0 0 24px;max-width:560px;line-height:1.5;}
   #overlay .keys{font-size:13px;line-height:2;color:#cfc8b8;}
@@ -50,9 +49,8 @@
 <div class="hud" id="cross"></div>
 <canvas id="minimap" width="204" height="192"></canvas>
 <div id="overlay">
-  <div class="kicker">DEAN ALICE LLOYD, PROPRIETOR</div>
   <h1>HOTEL ALICE LLOYD</h1>
-  <h2>Four suites, four legendary Michigan women: Angell, Palmer, Hinsdale, Kleinstueck. The Dean will show you up. Check-out is not optional.</h2>
+  <h2>Dean Alice Lloyd, proprietor, will show you up to four suites kept for four legendary Michigan women: Angell, Palmer, Hinsdale, and Kleinstueck. Check-out is not optional.</h2>
   <div class="keys">
     <kbd>W A S D</kbd> walk · <kbd>mouse</kbd> or <kbd>click-drag</kbd> look · <kbd>Shift</kbd> run<br>
     <kbd>Tab</kbd> bird's-eye view · <kbd>G</kbd> route arrows · <kbd>V</kbd> narrator voice
@@ -65,6 +63,12 @@
 <script src="/js/three.min.js"></script>
 <script src="/js/engine.js"></script>
 <script src="/js/hotel/building.js"></script>
+<script src="/js/hotel/lobby.js"></script>
+<script src="/js/hotel/angell.js"></script>
+<script src="/js/hotel/palmer.js"></script>
+<script src="/js/hotel/hinsdale.js"></script>
+<script src="/js/hotel/kleinstueck.js"></script>
+<script src="/js/hotel/checkout.js"></script>
 <script src="/js/hotel/route.js"></script>
 <script>
 if (!window.HOTEL || window.HOTEL.failed){ document.getElementById('overlay').innerHTML='<h1>Could not load 3D engine</h1><h2>Check your connection and reload.</h2>'; }
