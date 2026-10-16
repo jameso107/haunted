@@ -4,6 +4,11 @@ A first-person 3D walkthrough (schematic scale) of the **Hotel Alice Lloyd** hau
 
 Walk the route before you build it, on a laptop or in a Meta Quest headset. Built with [Three.js](https://threejs.org/) r128 and WebXR.
 
+The start screen offers two modes:
+
+- **The full stay:** the show as guests will get it, with narration, every suite's scene and scare, and doors that open as each show finishes.
+- **Just walk through:** no story, voices or scares, and every suite door stands open, so you can walk the whole route at your own pace. Engine flag `HOTEL.walk`. In this mode zones never fire, `HOTEL.show(...).go()`, `say` and `scare` do nothing, and suite doors open without running `onOpen`.
+
 ## Controls
 
 | Key | Action |

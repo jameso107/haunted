@@ -23,13 +23,20 @@
   #scare{top:40%;left:50%;transform:translateX(-50%);font-family:Georgia,serif;font-size:34px;font-weight:700;color:#ff4b3a;text-shadow:0 0 24px #a00,0 2px 8px #000;display:none;text-align:center;}
   #cross{top:50%;left:50%;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.75);transform:translate(-50%,-50%);}
   #minimap{position:absolute;top:14px;right:14px;background:rgba(12,11,9,.82);border:1px solid #4a4436;border-radius:8px;}
-  #overlay{position:absolute;inset:0;background:radial-gradient(ellipse at center,#16111a 0%,#050408 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#e8e2d4;text-align:center;cursor:pointer;padding:0 16px;}
+  #overlay{position:absolute;inset:0;background:radial-gradient(ellipse at center,#16111a 0%,#050408 75%);display:flex;flex-direction:column;align-items:center;justify-content:safe center;overflow-y:auto;color:#e8e2d4;text-align:center;padding:24px 16px;box-sizing:border-box;}
   #overlay h1{font-family:Georgia,serif;font-size:34px;letter-spacing:3px;color:#f6a13c;margin:0 0 6px;}
   #overlay h2{font-family:Georgia,serif;font-style:italic;font-weight:400;font-size:16px;color:#c9c2b2;margin:0 0 24px;max-width:560px;line-height:1.5;}
   #overlay .keys{font-size:13px;line-height:2;color:#cfc8b8;}
-  #overlay .go{margin-top:26px;font-size:15px;color:#ffe9c4;border:1px solid #f6a13c;border-radius:22px;padding:9px 26px;}
+  #overlay .modes{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:26px;max-width:720px;}
+  #overlay .mode{flex:1 1 260px;max-width:340px;box-sizing:border-box;display:flex;flex-direction:column;text-align:left;border:1px solid #4a4436;border-radius:12px;padding:16px 18px;background:rgba(22,18,16,.7);}
+  #overlay .mode .btns{margin-top:auto;}
+  #overlay .mode b{display:block;font-family:Georgia,serif;font-size:19px;color:#ffdf9e;margin-bottom:6px;}
+  #overlay .mode p{margin:0 0 4px;font-size:14px;line-height:1.5;color:#cfc8b8;}
+  #overlay .go{font:inherit;font-size:15px;cursor:pointer;margin:14px 8px 0 0;color:#ffe9c4;background:transparent;border:1px solid #f6a13c;border-radius:22px;padding:9px 22px;}
+  #overlay .go:hover{background:rgba(246,161,60,.14);}
+  #overlay .go:focus-visible{outline:2px solid #ffdf9e;outline-offset:2px;}
   #overlay small{margin-top:22px;color:#a39c8c;font-size:12.5px;}
-  #overlay .go.vr{display:none;margin-top:12px;background:#f6a13c;color:#3a2a10;font-weight:700;}
+  #overlay .go.vr{display:none;background:#f6a13c;color:#3a2a10;font-weight:700;}
   #vrbtn{position:absolute;bottom:18px;right:16px;display:none;font:600 13px 'Avenir Next','Segoe UI',system-ui,sans-serif;color:#3a2a10;background:#f6a13c;border:0;border-radius:18px;padding:8px 16px;cursor:pointer;}
   kbd{background:#2a2620;border:1px solid #57503f;border-radius:4px;padding:0 6px;font-family:inherit;color:#ffdf9e;}
 </style>
@@ -53,10 +60,20 @@
   <h2>Dean Alice Lloyd, proprietor, will show you up to four suites kept for four legendary Michigan women: Angell, Palmer, Hinsdale, and Kleinstueck. Check-out is not optional.</h2>
   <div class="keys">
     <kbd>W A S D</kbd> walk · <kbd>mouse</kbd> or <kbd>click-drag</kbd> look · <kbd>Shift</kbd> run<br>
-    <kbd>Tab</kbd> bird's-eye view · <kbd>G</kbd> route arrows · <kbd>V</kbd> narrator voice
+    <kbd>Tab</kbd> bird's-eye view · <kbd>G</kbd> route arrows · <kbd>V</kbd> narrator voice · <kbd>L</kbd> house lights
   </div>
-  <div class="go">Click to check in</div>
-  <div class="go vr" id="vrgo">Enter VR</div>
+  <div class="modes">
+    <div class="mode">
+      <b>The full stay</b>
+      <p>Dean Lloyd narrates and every suite plays its scene and its scare. Each door opens when the show before it finishes. About 12 minutes.</p>
+      <div class="btns"><button class="go" type="button" data-mode="story">Check in</button><button class="go vr" type="button" data-mode="story">Enter VR</button></div>
+    </div>
+    <div class="mode">
+      <b>Just walk through</b>
+      <p>No story, no voices, no scares. Every door stands open, so you can walk the whole route at your own pace.</p>
+      <div class="btns"><button class="go" type="button" data-mode="walk">Walk in</button><button class="go vr" type="button" data-mode="walk">Enter VR</button></div>
+    </div>
+  </div>
   <small>Best on desktop Chrome / Edge / Firefox or a Meta Quest browser · headphones recommended</small>
 </div>
 <button id="vrbtn" type="button">Enter VR</button>

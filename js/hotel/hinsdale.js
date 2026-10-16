@@ -305,7 +305,7 @@ var fv=new THREE.Vector3(), dv=new THREE.Vector3();
 H.onUpdate(function(dt,t){
   var vis=G.visible, core=H.inBox(455,276,528,388), run=state!=='idle'&&state!=='done';
   lampL.intensity=vis?0.55:0; bustL.intensity=vis?0.35:0; bust[0].scr.range=bust[1].scr.range=vis?6:0; tallyScr.range=vis?8:0;   // range 0: no canvas uploads while hidden
-  if(state==='idle'){ inT=(H.started() && (!H.stay.hinsdaleDone||aborted) && core)?inT+dt:0; if(inT>2.5) exam.start(); }   // slipped in through the pine-lane gap
+  if(state==='idle'){ inT=(H.started() && !H.walk && (!H.stay.hinsdaleDone||aborted) && core)?inT+dt:0; if(inT>2.5) exam.start(); }   // slipped in through the pine-lane gap
   else if(run){ outT=vis?0:outT+dt; if(outT>20) abort(); }                                                             // wandered well away mid-exam
   else { if(aborted){ inT=core?inT+dt:0; if(inT>2) exam.start(); } outT=vis?0:outT+dt; if(outT>20) reset(); }           // came back after leaving / ready for the next party
   if(run && shut && H.player().x>440){ d1912.gazeT=0; d1912.dwellT=0; if(d1912.isOpen && H.player().x>445) d1912.close(); }   // the shut door stays shut from inside

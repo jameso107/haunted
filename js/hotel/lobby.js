@@ -378,7 +378,7 @@ function capIs(id){ var ln=capDiv.querySelector('.line'); return !!ln && ln.text
 
 // ---------- 6. narration zones ----------
 var SAFE='Safe phrase tonight: say “Do not disturb” with a hand on your head.';
-function welcome(){ talk('Q1'); H.cap(SAFE); H.after(7,function(){ if(stageDiv.textContent===SAFE) H.cap(''); }); }
+function welcome(){ if(H.walk) return; talk('Q1'); H.cap(SAFE); H.after(7,function(){ if(stageDiv.textContent===SAFE) H.cap(''); }); }
 H.onBegin(function(){ welcome();
   H.stations.forEach(function(s){ if(s.n===0){ s.name='Arrival · Hall of Guests'; s.desc='up the stairs, or the elevator (the accessible entrance) · the Dean’s portrait watches the queue'; }
     if(s.n===1){ s.name='The Front Desk'; s.desc='sign the register · watch LOBBY CAM 2 · take your key'; } }); });

@@ -330,7 +330,7 @@ function speak(text){ if(!narr.voice || !window.speechSynthesis) return; try{ sp
 function showLine(){ var c=narr.cur; hudState.who=c?c.who:''; hudState.line=c?c.text:'';
   capEl.innerHTML=c?((c.who?'<span class="who">'+c.who+'</span>':'')+'<span class="line"></span>'):''; if(c) capEl.querySelector('.line').textContent=c.text; }
 // H.say(lines, {who:'DEAN LLOYD', voice:true, interrupt:false, hold:seconds})
-H.say = function(lines,o){ o=o||{}; if(typeof lines==='string') lines=[lines];
+H.say = function(lines,o){ if(H.walk) return; o=o||{}; if(typeof lines==='string') lines=[lines];
   if(o.interrupt){ narr.q.length=0; narr.cur=null; if(window.speechSynthesis) try{ speechSynthesis.cancel(); }catch(e){} }
   var who=o.who===undefined?'DEAN LLOYD':o.who;
   lines.forEach(function(l){ narr.q.push({text:l,who:who,voice:o.voice===undefined?(who==='DEAN LLOYD'):o.voice,hold:o.hold,at:o.at}); }); };
@@ -349,7 +349,7 @@ function narrTick(dt){
     if((narr.left<=0 && !talking) || narr.max<=0){ if(g2) g2.mesh.material.emissiveIntensity=0.05; narr.cur=null; if(!narr.q.length) showLine(); } }
 }
 var scareT=0;
-H.scare = function(txt,secs){ hudState.scare=txt; scareEl.textContent=txt; scareEl.style.display='block'; scareT=secs||1.6; };
+H.scare = function(txt,secs){ if(H.walk) return; hudState.scare=txt; scareEl.textContent=txt; scareEl.style.display='block'; scareT=secs||1.6; };
 
 // ---------- show helpers ----------
 H.flick = function(t,hz,duty){ var p=(t*Math.min(hz||2,3))%1; return p<(duty||0.5)?1:0.15; };   // flicker, capped at 3 Hz for photosensitivity
@@ -362,7 +362,7 @@ H.gaze = function(x,y,z,maxM,cos){ var h=H.headPos(); _dv.set(x*SC-h.x,y-h.y,z*S
 H.onUse = H.onSkip;
 H.useIn = function(x1,z1,x2,z2,fn){ H.onSkip(function(){ if(H.inBox(x1,z1,x2,z2)) fn(); }); };
 // cue timeline: H.show([[0,fn],[1.5,fn]...]) -> {go(), running(), stop()}
-H.show = function(cues){ var st={t:-1,i:0}; st.go=function(){ st.t=0; st.i=0; }; st.running=function(){ return st.t>=0; }; st.stop=function(){ st.t=-1; };
+H.show = function(cues){ var st={t:-1,i:0}; st.go=function(){ if(H.walk) return; st.t=0; st.i=0; };   // walk-through mode: no show ever starts st.running=function(){ return st.t>=0; }; st.stop=function(){ st.t=-1; };
   H.onUpdate(function(dt){ if(st.t<0) return; st.t+=dt; while(st.i<cues.length && cues[st.i][0]<=st.t){ cues[st.i][1](); st.i++; } if(st.i>=cues.length) st.t=-1; }); return st; };
 // additive, unlit, starts invisible: holograms, Pepper's-ghost figures, projections (animate .opacity)
 H.holoMat = function(tex,color){ return new THREE.MeshBasicMaterial({map:tex||null,color:color||0xffffff,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}); };
@@ -405,11 +405,12 @@ H.suiteDoor = function(o){
   d.close=function(){ d.isOpen=false; d.target=0; gate.off=false; d.setRing(0xf2efe6); d.warned=false; d.gazeT=0; d.dwellT=0; };
   H.onSkip(function(){ if(!d.isOpen && H.near(mx,mz,1.2) && H.gaze(mx,1.2,mz,1.6,0.8)) d.openDoor(); });
   H.onUpdate(function(dt){
+    if(H.walk && !d.isOpen){ d.isOpen=true; d.target=1; gate.off=true; d.setRing(0x3fd47f); }   // walk-through mode: every door stands open (no onOpen, so no show)
     if(!d.isOpen){ var near=H.near(ax,az,1.0);
       d.gazeT=H.gaze(rx,1.12,rz,1.6,0.9)?d.gazeT+dt:0; d.dwellT=near?d.dwellT+dt:0;
       if((d.gazeT>1.5 || d.dwellT>4) && !(o.quiet && o.ready && !o.ready())) d.openDoor();
       if(!near && !H.near(mx,mz,2) && ringMat.color.getHex()===0xffb030){ d.setRing(0xf2efe6); d.warned=false; } }
-    else if(o.autoClose!==false){ d.awayT=H.near(mx,mz,12)?0:d.awayT+dt; if(d.awayT>20) d.close(); }
+    else if(o.autoClose!==false && !H.walk){ d.awayT=H.near(mx,mz,12)?0:d.awayT+dt; if(d.awayT>20) d.close(); }
     if(d.open!==d.target){ d.open+= (d.target>d.open?1:-1)*dt/1.2; d.open=Math.max(0,Math.min(1,d.open));
       hinges.forEach(function(h){ h.g.rotation.y=h.base+h.flip*sgn*d.open*Math.PI*0.5; }); }
   });
@@ -579,12 +580,17 @@ renderer.xr.addEventListener('sessionend',function(){
 });
 
 // ---------- start ----------
-function begin(){
+// mode: 'story' (the full stay, the default) or 'walk' (walk-through: no narration, shows or scares; every suite door open)
+H.walk = false;
+function begin(mode){
   if(started) return;
+  H.walk = mode==='walk';
   started=true; document.getElementById('overlay').style.display='none'; audio();
   if(xr.supported) document.getElementById('vrbtn').style.display='block';
   loopsOnBegin.forEach(function(f){ f(); });
   beginFns.forEach(function(f){ f(); });
+  if(H.walk){ stations.forEach(function(s){ s.desc=s.n===1?'the check-in desk and LOBBY CAM 2':s.desc.split(' \u00B7 ')[0]; });   // drop the show instructions
+    document.getElementById('title').insertAdjacentHTML('beforeend',' &nbsp;·&nbsp; walk-through mode'); }
 }
 H.begin = begin;
 H.started = function(){ return started; };
@@ -619,8 +625,8 @@ function tick(){
     marker.position.x=pos.x; marker.position.z=pos.z; marker.rotation.y=yaw+Math.PI;
   }
 
-  // zones, then content updaters
-  if(started){
+  // zones (none in walk-through mode: they only start narration and shows), then content updaters
+  if(started && !H.walk){
     for(var i=0;i<zones.length;i++){ var z=zones[i];
       var inside=H.inBox(z.x1,z.z1,z.x2,z.z2) && (!z.when || z.when());
       if(inside && !z.inside){ z.inside=true; if(!(z.once && z.fired)){ z.fired=true; if(z.enter) z.enter(); } }
@@ -680,16 +686,16 @@ H.run = function(){
   ovCamO.position.set(cx,40,cz); ovCamO.lookAt(cx,0,cz);
   buildMinimap();
   window.addEventListener('resize',resize); resize();
-  document.getElementById('overlay').addEventListener('click',function(){
-    begin();
+  [].forEach.call(document.querySelectorAll('#overlay .go:not(.vr)'),function(b){ b.addEventListener('click',function(){
+    begin(b.getAttribute('data-mode'));
     try{ canvas.requestPointerLock&&canvas.requestPointerLock(); }catch(e){}
-  });
+  }); });
   canvas.addEventListener('click',function(){ if(started){ try{ canvas.requestPointerLock&&canvas.requestPointerLock(); }catch(e){} } });
   if(navigator.xr && navigator.xr.isSessionSupported){
     navigator.xr.isSessionSupported('immersive-vr').then(function(ok){ if(!ok) return;
       xr.supported=true;
-      document.getElementById('vrgo').style.display='inline-block';
-      document.getElementById('vrgo').addEventListener('click',function(e){ e.stopPropagation(); begin(); enterVR(); });
+      [].forEach.call(document.querySelectorAll('#overlay .go.vr'),function(b){ b.style.display='inline-block';
+        b.addEventListener('click',function(){ begin(b.getAttribute('data-mode')); enterVR(); }); });
       document.getElementById('vrbtn').addEventListener('click',enterVR);
       if(started) document.getElementById('vrbtn').style.display='block';
     }).catch(function(){});
