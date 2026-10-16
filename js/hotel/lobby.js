@@ -1,6 +1,6 @@
 /* Hotel Alice Lloyd: lobby. The Hall of Guests queue along the south wall, the front desk with LOBBY CAM 2,
    and the guest hall (James's loop) to Suite 1871. Zone: queue strip x 190-605 z 540-625, start region x 548-607
-   z 395-540, guest hall x 350-548 z 467-540, north lane x 346-428 z 392-467, vestibule east half x 318-350 z 392-420. */
+   z 395-540, guest hall x 350-548 z 467-540, north lane x 346-428 z 392-467 (with the TV), vestibule hallway x 280-350 z 392-420. */
 (function(){
 'use strict';
 var H = window.HOTEL; if (!H || H.failed) return;
@@ -44,8 +44,7 @@ function clamp(v,a,b){ return v<a?a:v>b?b:v; }
 // ---------- 1. structure (scene level) ----------
 H.curtain(190,540,464.4,540); H.curtain(475.6,540,548,540);   // QN: queue curtain; butts column C2 (470,538), passes north of C1 (330,553)
 H.curtain(346,420,346,540);                                   // JD: James's divider carried to QN so Room 1 is closed from the guest hall
-H.curtain(318,390,318,420);                                   // VD: vestibule divider
-H.curtain(346,420,360,420);                                   // STUB: door-surround flat for Suite 1871's plate and reader (angell.js)
+H.curtain(346,420,360,420);                                   // STUB: the east end of Suite 1871's long window wall; carries its plaque (angell.js). The vestibule runs on west to the Suite 1876 door
 [[560,402,605,402],[605,402,605,414],[605,414,560,414],[560,414,560,402],[546,402,560,402]].forEach(function(s){ H.seg(s[0],s[1],s[2],s[3]); H.map.walls.push(s); });   // desk counter + staff gate
 
 // ---------- 2. content group ----------
@@ -284,15 +283,57 @@ var facadeTex=H.canvasTex(256,512,function(g,w,h){ g.fillStyle='#2b2119'; g.fill
   g.fillStyle='#c9a24a'; g.beginPath(); g.arc(206,279,8,0,2*PI); g.fill(); g.fillRect(186,275,26,7);
   g.fillStyle='#efe6cf'; g.fillRect(176,292,62,104); g.strokeStyle='#7a5a30'; g.lineWidth=2; g.strokeRect(178,294,58,100); g.fillStyle='#6e4a2c'; g.beginPath(); g.arc(207,304,6,0,2*PI); g.fill();
   g.fillStyle='#4b2f18'; fit(g,'THE PROPRIETOR',9,54,'bold '); g.fillText('THE PROPRIETOR',207,326); g.fillText('·',207,340); fit(g,'DO NOT',12,54,'bold '); g.fillText('DO NOT',207,356); g.fillText('DISTURB',207,372); });
-var doorMesh=H.plane(1.05,2.2,H.lam(0xffffff,{map:facadeTex}),470,1.1,467.2,0,G);   // west of the real elevator door (x 518-543)
+var doorMesh=H.plane(1.05,2.2,H.lam(0xffffff,{map:facadeTex}),470,1.1,467.2,0,G);   // on the elevator block's south face (the real elevator doors are round the corner, on its east face)
 cell([0,520,338,338],textCell(['HOTEL ALICE LLOYD · GUEST SUITES','1871 · ANGELL','1876 · KLEINSTUECK','1912 · HINSDALE','1872 · PALMER','1949 · THE PROPRIETOR'],{bg:'#1d1a16',fg:'#d9b76a',border:'#8a6a2a',w:512,h:512,fs:40,boldFirst:true,firstScale:0.8}),0.55,0.55,437,1.55,467.2,0);
-DARK.push(bx(0.58,H.CURT_H,0.17,353,H.CURT_H/2,420));   // STUB's door-surround flat, deep enough that angell.js's 1871 plate and reader (z 417.75) sit on its face
+DARK.push(bx(0.58,H.CURT_H,0.17,353,H.CURT_H/2,420));   // STUB's flat, deep enough that angell.js's 1871 plaque (z 417.8) sits on its face
 GLOW.push(bx(0.12,0.2,0.08,448,1.95,467.3),bx(0.12,0.2,0.08,492,1.95,467.3),bx(0.12,0.2,0.08,334,1.95,392.4));
 // room-service cart with a brass cloche
 METAL.push(bx(0.9,0.04,0.5,430,0.8,527),bx(0.9,0.03,0.5,430,0.3,527));
 [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(function(s){ METAL.push(bx(0.03,0.8,0.03,430+s[0]*0.42/SC,0.4,527+s[1]*0.22/SC)); });
 BRASS.push(mk(new THREE.SphereGeometry(0.18,16,8,0,2*PI,0,PI/2),430,0.82,527),mk(new THREE.SphereGeometry(0.022,8,6),430,1.015,527));
 cell([343,346,338,145],textCell(['SUITE 1871 · ANGELL','STRAIGHT AHEAD, THEN LEFT'],{bg:BR.bg,fg:BR.fg,border:BR.border,w:512,h:220,fs:40,boldFirst:true}),0.7,0.3,346.7,1.6,470,PI/2);
+
+// ---------- 2d. the lobby TV: a 50-inch set on the elevator block's west face, round the corner from the desk (x 428 face, z 428) ----------
+// "Channel 1949": six cards, 7 s each, with a short burst of static between them. The canvas redraws only when the picture changes.
+var TVS=7, TVN=6, tvShown='';
+function tvKey(t){ var ph=t%TVS, k=Math.floor(t/TVS)%TVN; return ph<0.45?'s'+Math.floor(t*12):(k===5&&ph>3.5?'f':'k'+k); }
+function tvFrame(g,w,h,bg,edge){ g.fillStyle=bg; g.fillRect(0,0,w,h); g.strokeStyle=edge; g.lineWidth=4; g.strokeRect(14,14,w-28,h-28); g.lineWidth=1.5; g.strokeRect(22,22,w-44,h-44); }
+function tvText(g,txt,x,y,px,col,pre,maxW){ g.fillStyle=col; g.textAlign='center'; g.textBaseline='middle'; fit(g,txt,px,maxW||440,pre||''); g.fillText(txt,x,y); }
+function drawTV(g,t,w,h){ tvShown=tvKey(t); var ph=t%TVS, k=Math.floor(t/TVS)%TVN, i;
+  if(ph<0.45){ g.fillStyle='#161616'; g.fillRect(0,0,w,h); for(i=0;i<2600;i++){ var v=60+Math.random()*120|0; g.fillStyle='rgb('+v+','+v+','+v+')'; g.fillRect(Math.random()*w,Math.random()*h,3,2); } }
+  else if(k===0){ tvFrame(g,w,h,'#2a0f12','#c9a24a');
+    tvText(g,'IN-ROOM TELEVISION · CHANNEL 1949',w/2,58,15,'#c9a24a','bold ');
+    tvText(g,'HOTEL ALICE LLOYD',w/2,118,46,'#f2dc98','bold ');
+    tvText(g,'Welcome, Party of '+(H.party||'Guests'),w/2,174,24,'#efe3c8','italic ');
+    tvText(g,'open since 1949, and not yet closed',w/2,232,15,'#b89a6a','italic '); }
+  else if(k===1){ tvFrame(g,w,h,'#14110d','#8a6a2a'); tvText(g,'TONIGHT’S SUITES',w/2,52,26,'#d9b76a','bold ');
+    [['1871 · ANGELL','#b3272a','#8e9096'],['1876 · KLEINSTUECK','#6b4526','#3f7a3a'],['1912 · HINSDALE','#141414','#d4af37'],['1872 · PALMER','#e2c233','#6b4526']].forEach(function(r,j){ var y=98+j*44;
+      g.fillStyle=r[1]; g.fillRect(118,y-14,14,28); g.fillStyle=r[2]; g.fillRect(132,y-14,14,28); g.strokeStyle='#8a6a2a'; g.lineWidth=1; g.strokeRect(118,y-14,28,28);
+      g.fillStyle='#efe3c8'; g.textAlign='left'; g.textBaseline='middle'; fit(g,r[0],24,280,''); g.fillText(r[0],166,y); }); }
+  else if(k===2){ var gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#cdb084'); gr.addColorStop(1,'#6e5434'); g.fillStyle=gr; g.fillRect(0,0,w,h);
+    tvText(g,'MICHIGAN NEWSREEL · 1949',w/2,40,16,'#2b1d12','bold ');
+    g.fillStyle='#3a2a1a'; g.fillRect(70,150,372,64); g.fillRect(200,118,112,32); g.fillRect(70,212,372,6);   // the new hall, long and low
+    g.fillStyle='#e6d2a4'; for(i=0;i<14;i++){ g.fillRect(82+i*25.5,162,13,14); g.fillRect(82+i*25.5,188,13,14); } for(i=0;i<4;i++) g.fillRect(212+i*25,126,12,14);
+    tvText(g,'ALICE LLOYD HALL OPENS ON THE HILL',w/2,244,18,'#2b1d12','bold ');
+    tvText(g,'“A DREAM IN MODERN LIVING”',w/2,74,26,'#1d1408','italic ');
+    for(i=0;i<900;i++){ g.fillStyle='rgba(30,20,10,'+(Math.random()*0.25)+')'; g.fillRect(Math.random()*w,Math.random()*h,1.5,1.5); }
+    g.strokeStyle='rgba(30,20,10,0.35)'; g.lineWidth=1; g.beginPath(); g.moveTo(388,0); g.lineTo(380,h); g.stroke(); }
+  else if(k===3){ tvFrame(g,w,h,'#101a2e','#c9a24a'); tvText(g,'HOUSE RULES',w/2,50,28,'#f2dc98','bold ');
+    ['walk, do not run','keep your hands to yourselves','stay with your party'].forEach(function(r,j){ tvText(g,'·  '+r+'  ·',w/2,100+j*34,22,'#efe3c8'); });
+    tvText(g,'To leave early, say “Do not disturb” with a hand on your head.',w/2,226,15,'#b8c4dc','italic '); }
+  else if(k===4){ var bars=['#b8b8b8','#b8b83c','#3cb8b8','#3cb83c','#b83cb8','#b83c3c','#3c3cb8'];
+    for(i=0;i<7;i++){ g.fillStyle=bars[i]; g.fillRect(i*w/7,0,w/7+1,h*0.72); } g.fillStyle='#202020'; g.fillRect(0,h*0.72,w,h*0.28);
+    g.fillStyle='rgba(10,10,10,0.85)'; g.fillRect(w/2-150,h*0.36-30,300,60); tvText(g,'PLEASE STAND BY',w/2,h*0.36,28,'#efe3c8','bold '); }
+  else { g.fillStyle='#0b0b0d'; g.fillRect(0,0,w,h); tvText(g,'WE HOPE YOU ENJOY YOUR STAY',w/2,h/2-22,26,'#efe3c8','bold ');
+    if(ph>3.5) tvText(g,'FOREVER.',w/2,h/2+30,22,'#a8302c','italic '); }
+  g.fillStyle='rgba(0,0,0,0.16)'; for(var y=0;y<h;y+=3) g.fillRect(0,y,w,1);   // scanlines
+  var vg=g.createRadialGradient(w/2,h/2,h*0.35,w/2,h/2,w*0.62); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.55)'); g.fillStyle=vg; g.fillRect(0,0,w,h); }
+var tvScr=H.screen(512,288,drawTV,{x:427,z:428,range:9,every:2});
+DARK.push(bx(0.05,0.7,1.17,427.4,1.55,428));                                       // the set: bezel and back
+add(H.plane(1.1,0.62,basic(tvScr.tex,{color:0xdddddd}),426.7,1.55,428,-PI/2));     // the picture, self-lit
+var tvLast=-1;
+H.onUpdate(function(){ tvScr.every=tvKey(H.t)!==tvShown?2:1e9;
+  var k=Math.floor(H.t/TVS); if(k!==tvLast){ tvLast=k; if(H.started() && H.near(427,428,5)) H.sfx.noise(0.45,3200,0.04,{type:'highpass',x:427,z:428}); } });   // a hiss of static between cards
 
 // static merges
 merge(WOOD,M.wood); merge(DARKW,M.woodDark); merge(DARK,M.dark); merge(BRASS,M.brass); merge(METAL,M.metal); merge(GILT,H.lam(0xb8923a)); merge(GLOW,H.glow(0xffc98a,0.8));
@@ -301,7 +342,7 @@ var atlasTex=new THREE.CanvasTexture(AT); atlasTex.anisotropy=4; merge(ATL,H.lam
 // ---------- 3. lights (4 of 4) ----------
 var deskL=H.plight(582,425,2.3,0xffc98a,0.6,6), hallW=H.plight(298,604,2.2,0xffb060,0.9,8), hallE=H.plight(462,604,2.2,0xffb060,0.9,8), loopL=H.plight(462,488,2.3,0xffc080,0.7,8);
 var LS=[[deskL,0.6],[hallW,0.9],[hallE,0.9],[loopL,0.7]], lf=1;
-function inLobby(p){ return p.z>=540 || p.z>=388 && (p.x>=346 || p.x>=318 && p.z<=420); }   // queue, desk, hall, north lane, vestibule (not Room 1 or anything north)
+function inLobby(p){ return p.z>=540 || p.z>=388 && (p.x>=346 || p.x>=280 && p.z<=420); }   // queue, desk, hall, north lane, the vestibule hallway at Suite 1871's window (not Room 1 or anything north)
 H.onUpdate(function(dt){ var p=H.player(), k=p.z>540?0:clamp((472-p.x)/82,0,1);   // loopL glides with the party: over the proprietor's door, then up the north lane (never west of x 400)
   loopL.position.set((462-62*k)*SC,2.3,(488-52*k)*SC);
   var to=inLobby(p)?1:0; if(lf!==to){ lf=clamp(lf+(to>lf?dt:-dt)/0.6,0,1); LS.forEach(function(l){ l[0].intensity=l[1]*lf; }); } });   // curtains don't stop point lights: the lobby goes dark once the party is in Room 1
@@ -323,10 +364,10 @@ H.addLines({
   D1:{at:'desk',t:'Sign the register, please. In my day every young woman in this hall signed out in that book and signed back in, and the house mothers read every page.'},
   D2:{at:'desk',t:'Don’t turn around, dear. It is rude to stare at the proprietor.'},
   D3:{at:'phone',t:'Front desk? Dean Lloyd speaking. From the fall of 1949 every call for Stockwell and Mosher-Jordan came through this board, and tonight all four of your suites are ringing at once.'},
-  D4:{at:'desk',t:'One key per party. It opens Angell, Kleinstueck, Hinsdale and Palmer, in that order, and nothing else, so please don’t try.'},
+  D4:{at:'desk',t:'One key per party. Mrs. Angell receives through the glass; the key opens Kleinstueck, Hinsdale and Palmer, in that order, and nothing else, so please don’t try.'},
   S1:{at:'corridor',t:'Four suites tonight, four Michigan women, and each room kept exactly as she liked it. The room numbers are the years they made history.'},
   S2:{at:'corridor',t:'That door is mine. Please do not knock.'},
-  S3:{at:'vestibule',t:'Suite 1871. Tap your key and stand up straight; you are about to be received by the first lady of the University.'}
+  S3:{at:'vestibule',t:'Suite 1871. We keep it behind glass now, but stand up straight all the same; you are about to be received by the first lady of the University.'}
 });
 var F=0, qf=-1;   // frame count: a line queued this frame is not on the caption yet, so calm() waits one frame
 function mark(){ qf=F; }
@@ -345,7 +386,7 @@ H.onBegin(function(){ welcome();
 var key=0, s3=false, knockT=[], kn=0;   // key: 0 none, 1 key lines queued, 2 key in hand; kn (the knock): 0 armed, 1 knocking, 2 S2 queued, 3 S2 on the caption, 4 done
 function keyed(){ return key===2; }
 H.narrateIds(['L1'],[548,420,607,540],{when:function(){ return calm() && key===0 && !dz.fired; },then:mark});   // covers the desk too, so an elevator arrival hears it before check-in, never after
-H.narrateIds(['S3'],[318,388,358,420],{when:keyed,then:function(){ mark(); s3=true; if(!kn) kn=4; }});   // at the 1871 door (S1 now plays at the desk, just before the key: see answer())
+H.narrateIds(['S3'],[280,388,358,420],{when:keyed,then:function(){ mark(); s3=true; if(!kn) kn=4; }});   // at Suite 1871's window (S1 now plays at the desk, just before the key: see answer())
 
 // ---------- 7. the desk and LOBBY CAM 2 ----------
 var ringing=false, ringT=0, ringNext=0, ghost;
@@ -402,7 +443,7 @@ H.resets.push(function(){ desk.stop(); phoneCue.stop(); cam.on=false; tear.visib
   knockT.forEach(function(w){ w.dead=true; }); knockT=[]; kn=0; key=0; s3=false; doorMesh.position.set(470*SC,1.1,467.2*SC);
   H.after(0.3,welcome); });
 // a party that walks past the desk without a key is sent back for it
-H.zone({x1:318,z1:392,x2:362,z2:432,once:false,when:function(){ return !H.stay.checkedIn; },enter:function(){ if(H.quiet && !H.quiet()) return; H.say('You will want your key first, dear. The front desk is back the way you came.',{at:'vestibule'}); }});
-// a warm sconce over the vestibule so the Suite 1871 door reads in show mode
+H.zone({x1:280,z1:392,x2:362,z2:420,once:false,when:function(){ return !H.stay.checkedIn; },enter:function(){ if(H.quiet && !H.quiet()) return; H.say('You will want your key first, dear. The front desk is back the way you came.',{at:'vestibule'}); }});
+// a warm sconce over the vestibule so the hallway at Suite 1871's window reads in show mode
 H.plight(338,406,2.2,0xffc98a,0.55,4.5);
 })();

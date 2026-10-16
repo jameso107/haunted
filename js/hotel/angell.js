@@ -1,5 +1,6 @@
-/* Hotel Alice Lloyd: Suite 1871, Angell, "The Night the House Was Wired" (Room 1, the Dean's office behind the mirror, the Window).
-   Room 1 x 193-346, z 420-540 + the alcove x 193-280, z 392-420; the mirror chamber x 70-190, z 415-500; the Window box x 220-272, z 362-390. */
+/* Hotel Alice Lloyd: Suite 1871, Angell, "The Night the House Was Wired". Guests do not enter (James, 2026-10-15): they watch from the
+   vestibule hallway (x 280-346, z 392-420) through a long window in the suite's north wall (z=420), and the hallway ends at the Suite 1876 door.
+   Room 1 x 193-346, z 420-540 (+ the alcove x 193-280, z 392-420, now closed off); the Dean's-office chamber x 70-190 sits behind a decor mirror. */
 (function(){
 'use strict';
 var H = window.HOTEL; if (!H || H.failed) return;
@@ -54,19 +55,24 @@ H.addLines({
   A7:{t:'The Angells often had a young student named Alice Freeman in their home; you will meet her before the night is out. Suite 1876 is through that door.',at:'window'}
 });
 var n0=H.scene.children.length;   // scene-level meshes from here on are this file's (the glass sees them)
-H.grille('parlor',345.2,2.3,470,-PI/2); H.grille('window',246,2.4,392.2,0);
+H.grille('parlor',345.2,2.3,470,-PI/2); H.grille('window',313,2.35,419.3,PI);   // 'window': over the long window, hallway side
 
 // ---------- structure (scene level) ----------
-H.curtain(280,420,318,420);                                    // V2: keeps the vestibule's west strip (Room 1's exit) off the room's body
-H.curtain(220,362,272,362); H.curtain(272,362,272,390);        // the Window box (black duvetyne): north and east sides; west side is wall x=220, south is the window wall
-H.seg(190,430,190,460); H.map.walls.push([190,430,190,460]);   // the two-way mirror fills the Dean's-office doorway
-var d1871=H.suiteDoor({x1:318,z1:420,x2:346,z2:420,approach:-1,plate:['1871 \u00B7 ANGELL'],num:'1871',
-  ready:function(){ return !!H.stay.checkedIn; }, onOpen:function(){ resetRoom(); delete H.stay.angellDone; pend=H.t; }});   // entered from the north; leaves swing into the room
-var pend=null;   // the show clock starts once the lobby's lead-in (S3) has finished, so A1-A3 and the duel keep the script's grid
+H.curtain(280,390,280,420);                                    // the hallway's west end: the alcove stays part of the suite, out of sight
+H.seg(190,430,190,460); H.map.walls.push([190,430,190,460]);   // a decor mirror fills the Dean's-office doorway
+// the long window: the suite's north wall x 280-346 at z=420, glass x 284-342, y 0.9-2.1 (dark-wood flats on the hallway side)
+H.seg(280,420,346,420); H.map.walls.push([280,420,346,420]); H.cap2d(280,420,346,420,'#9cc4e8',H.WALL_H);
+H.merge([H.box(2.64,0.9,0.04,M.woodDark,313,0.45,420),H.box(2.64,H.WALL_H-2.1,0.04,M.woodDark,313,(H.WALL_H+2.1)/2,420),
+  H.box(0.16,1.2,0.04,M.woodDark,282,1.5,420),H.box(0.16,1.2,0.04,M.woodDark,344,1.5,420)],M.woodDark);
+H.merge([H.box(2.4,0.04,0.14,M.brass,313,0.9,419.4),H.box(2.4,0.06,0.06,M.brass,313,2.1,419.4),H.box(0.04,1.2,0.06,M.brass,283.5,1.5,419.4),H.box(0.04,1.2,0.06,M.brass,342.5,1.5,419.4)],H.lam(0xb8923a));
+H.plane(2.32,1.2,new THREE.MeshLambertMaterial({color:0x9cc4e8,transparent:true,opacity:0.1,side:THREE.DoubleSide,depthWrite:false}),313,1.5,420);
+H.sign(['1871 \u00B7 ANGELL'],{w:384,h:128,fs:46,bg:'#1d1a16',fg:'#d9b76a',border:'#8a6a2a',bw:8},0.3,0.1,353,1.52,417.8,PI);   // on the lobby's STUB flat
+H.plane((268-222)*SC,1.2,M.black,245,1.5,389.4,PI);             // the real interior window (z=390) into the alcove, blacked out on the Suite 1876 side
+var pend=null, begun=false;   // no door: the show begins when the checked-in party reaches the window, and its clock waits for the lobby's S3 to finish
 
 // ---------- content group ----------
-var G=H.cull(H.group(0,0),[[60,388,365,545],[270,340,330,392]]);   // + the look back through the Suite 1876 doorway
-function inRoom(){ return H.inBox(190,420,346,540) || H.inBox(190,390,318,420); }   // Room 1, the alcove and its exit strip: where the glass can be seen
+var G=H.cull(H.group(0,0),[[60,388,365,545],[270,340,330,392]]);   // the hallway and the north lane's mouth, + the look back through the Suite 1876 doorway
+function inHall(){ return H.inBox(280,390,362,420); }   // the hallway at the long window: where the glass can be seen
 function mg(list,mat){ var m=H.merge(list,mat); G.add(m); return m; }
 
 // canvas art
@@ -162,16 +168,16 @@ var flameScr=H.screen(64,128,drawFlame,{x:266,z:470,range:8,every:3});
 var flameMat=new THREE.MeshBasicMaterial({map:flameScr.tex,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
 
 // walls: damask (y 0.9-2.5) over oak wainscot (y 0-0.9); [axis, at, from, to, ry, y0, y1]
-var FACES=[['x',192.2,392,430,PI/2],['x',192.2,460,539.4,PI/2],['x',345.4,420.4,539.4,-PI/2],['z',539.4,192.2,345.4,PI],['z',420.6,280,318,0],
+var FACES=[['x',192.2,392,430,PI/2],['x',192.2,460,539.4,PI/2],['x',345.4,420.4,539.4,-PI/2],['z',539.4,192.2,345.4,PI],['z',420.6,280,284,0],['z',420.6,342,346,0],
   ['z',392.2,192.2,222,0],['z',392.2,268,280,0],['x',72.2,417,498,PI/2],['z',417.2,72,188,0],['z',497.8,72,188,PI]];
 function spans(mat,y0,y1,defs,list){ defs.forEach(function(d){ var a=d[5]==null?y0:d[5], b=d[6]==null?y1:d[6], w=Math.abs(d[3]-d[2])*SC, h=b-a;
   var geo=new THREE.PlaneGeometry(w,h,Math.ceil(w/0.5),3); H.scaleUV(geo,w/mat.map.size[0],h/mat.map.size[1]);
   var m=new THREE.Mesh(geo,mat), mid=(d[2]+d[3])/2; if(d[0]==='x') m.position.set(d[1]*SC,(a+b)/2,mid*SC); else m.position.set(mid*SC,(a+b)/2,d[1]*SC);
   m.rotation.y=d[4]; list.push(m); }); return list; }
-var frieze=spans(damMat,2.5,H.WALL_H,FACES.concat([['z',392.12,222,268,0],['x',192.2,430,460,PI/2]]),[]);   // plain plum frieze above the picture rail (also closes the gap over the curtains)
+var frieze=spans(damMat,2.5,H.WALL_H,FACES.concat([['z',392.12,222,268,0],['x',192.2,430,460,PI/2],['z',420.6,284,342,0]]),[]);   // plain plum frieze above the picture rail (also closes the gap over the curtains)
 frieze.forEach(function(m){ var uv=m.geometry.attributes.uv; for(var i=0;i<uv.count;i++) uv.setXY(i,0.25,0.875); });
-mg(spans(damMat,0.9,2.5,FACES.concat([['z',392.12,222,268,0,2.16,2.5],['x',192.2,430,460,PI/2,2.13,2.5]]),frieze),damMat);   // + over the window and over the mirror
-mg(spans(oakMat,0,0.9,FACES.concat([['z',392.2,222.8,267.2,0,0,0.88]]),[]),oakMat);                                       // + under the window
+mg(spans(damMat,0.9,2.5,FACES.concat([['z',392.12,222,268,0,2.16,2.5],['x',192.2,430,460,PI/2,2.13,2.5],['z',420.6,284,342,0,2.1,2.5]]),frieze),damMat);   // + over the windows and over the mirror
+mg(spans(oakMat,0,0.9,FACES.concat([['z',392.2,222.8,267.2,0,0,0.88],['z',420.6,284,342,0,0,0.9]]),[]),oakMat);           // + under the windows
 H.box(0.16,H.WALL_H-2.13,1.2,M.wall,190,(H.WALL_H+2.13)/2,445,0,G);                                                        // header over the office doorway
 G.add(H.floorPatch(215,432,335,528,rugMat));
 var rug2=H.floorPatch(96,424,182,492,rugMat); H.scaleUV(rug2.geometry,4.8/(86*SC),3.84/(68*SC)); G.add(rug2);                // the chamber's copy
@@ -183,7 +189,7 @@ function frame(cx,cy,cz,w,h,alongZ){ var t=0.05, d=0.04, o=(w/2+t/2)/SC;
   else giltL.push(H.box(w+2*t,t,d,gilt,cx,cy+h/2+t/2,cz),H.box(w+2*t,t,d,gilt,cx,cy-h/2-t/2,cz),H.box(t,h,d,gilt,cx-o,cy,cz),H.box(t,h,d,gilt,cx+o,cy,cz)); }
 frame(319,1.95,539.3,0.55,0.69,false); frame(72.4,1.95,452,0.55,0.69,true);
 giltL.push(H.box(0.06,0.8,1.2,gilt,190.4,0.4,445),H.box(0.06,0.23,1.2,gilt,190.4,2.015,445),H.box(0.06,1.1,0.2,gilt,190.4,1.35,432.5),H.box(0.06,1.1,0.2,gilt,190.4,1.35,457.5));
-FACES.forEach(function(d){ var L=Math.abs(d[3]-d[2])*SC, m=(d[2]+d[3])/2; giltL.push(d[0]==='x'?H.box(0.02,0.03,L,gilt,d[1],2.5,m):H.box(L,0.03,0.02,gilt,m,2.5,d[1])); });
+FACES.concat([['z',420.6,284,342,0]]).forEach(function(d){ var L=Math.abs(d[3]-d[2])*SC, m=(d[2]+d[3])/2; giltL.push(d[0]==='x'?H.box(0.02,0.03,L,gilt,d[1],2.5,m):H.box(L,0.03,0.02,gilt,m,2.5,d[1])); });
 mg(giltL,gilt);
 
 // portraits: hers over the piano; the chamber hangs the same one, mirror-reversed
@@ -235,12 +241,13 @@ var hd=new THREE.Mesh(new THREE.TorusGeometry(0.032,0.008,6,12)); hd.position.se
 mg(ivL,ivory);
 var card=H.plane(0.15,0.1,H.lam(0xffffff,{map:H.textTexture(['ANGELL HOUSE','MICHIGRAS 1956','\u2018BLOW, GABRIEL, BLOW\u2019'],{w:256,h:170,fs:24,bg:'#efe3c8',fg:'#33261a',border:'#8a6a2a',bw:6,boldFirst:true})}),223.5,0.73,500.5,0,G);
 card.rotation.set(-PI/2,0,1.35);
-H.sign(['SARAH CASWELL','ANGELL HALL \u00B7 1905'],{w:512,h:256,fs:56,bg:'#6b5226',fg:'#f2dc98',border:'#c9a44e',bw:10,boldFirst:true},0.4,0.2,204,1.5,392.4,0,G);
+H.sign(['SARAH CASWELL','ANGELL HALL \u00B7 1905'],{w:512,h:256,fs:56,bg:'#6b5226',fg:'#f2dc98',border:'#c9a44e',bw:10,boldFirst:true},0.4,0.2,340,1.45,392.4,0,G);   // hallway, north wall
 
-// ---------- the mirror and the chamber ----------
-var mir=H.mirror({x:190.8,z:445,y:1.35,w:0.8,h:1.1,ry:Math.PI/2,res:384,every:2,range:6,tint:0xc9cfd6}); mir.on=false;
-var RL=6; mir.cam.layers.set(RL); mir.cam.layers.enable(H.FEED_LAYER);   // the glass draws only the room (layer 6, see roomLayer) and the feed-only figures
-var glass=H.plane(0.8,1.1,new THREE.MeshBasicMaterial({color:0x1a2228,transparent:true,opacity:0.12,depthWrite:false}),190.6,1.35,445,Math.PI/2,G);
+// ---------- the two-way glass: the long window turns to a mirror when the parlor goes dark and the hallway is lit ----------
+var mir=H.mirror({x:313,z:419.3,y:1.5,w:2.32,h:1.2,ry:PI,res:512,every:2,range:5,tint:0xb4bcc6,alpha:true}); mir.on=false;
+var RL=6; mir.cam.layers.set(RL); mir.cam.layers.enable(H.FEED_LAYER);   // the glass draws only the hallway and room (layer 6, see roomLayer) and the feed-only figures
+function setGlass(v){ mir.mat.uniforms.op.value=v; mir.mesh.visible=v>0.01; } setGlass(0);
+var glass=H.plane(0.8,1.1,H.lam(0x56606a),190.6,1.35,445,Math.PI/2,G);   // the decor mirror on the west wall (no render pass)
 var faceT=H.canvasTex(128,64,function(g,w,h){ g.fillStyle='#ffffff'; g.fillRect(0,0,w,h); var x=w*0.25;
   g.fillStyle='#1a1414'; g.fillRect(x-8,27,5,3); g.fillRect(x+3,27,5,3); g.fillStyle='#6a5a50'; g.fillRect(x-9,23,7,1.5); g.fillRect(x+2,23,7,1.5);
   g.fillStyle='#b05a5a'; g.fillRect(x-4,40,8,2); ell(g,x-10,36,3,2,'rgba(210,120,120,0.5)'); ell(g,x+10,36,3,2,'rgba(210,120,120,0.5)'); g.fillStyle='#1a1414'; g.fillRect(x+7,33,1.5,1.5); });
@@ -249,11 +256,11 @@ function footman(){ var f=H.figure(0x101014,0xe8e0d0,G); f.children[1].material=
   var wig=new THREE.Mesh(new THREE.SphereGeometry(0.12,12,8),wigMat); wig.position.set(0,1.62,-0.035); wig.scale.set(1.08,0.82,1.0); f.add(wig);
   var a=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.11,0.05)), b=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.11,0.05)); a.position.set(-0.19,1.42,0.24); b.position.set(0.19,1.42,0.24);
   var gl=H.merge([a,b],gloveMat); f.add(gl); f.userData.gloves=gl; f.visible=false; return f; }
-var foot=footman(), footGhost=H.feedOnly(footman());   // the Footman; his ghost exists only in the glass
+var foot=footman(), footGhost=H.feedOnly(footman());   // the Footman at the glass; his ghost exists only in the reflection
 var mirror={state:'idle',t:0,tw:null};
 
 // ---------- the light duel ----------
-var gasL=H.plight(266,470,2.1,0xff9a40,0.9,7), elecL=H.plight(266,470,2.35,0xeef2ff,0,8), chamberL=H.plight(140,452,1.9,0xffd0a0,0,5);
+var gasL=H.plight(266,470,2.1,0xff9a40,0.9,7), elecL=H.plight(266,470,2.35,0xeef2ff,0,8), hallL=H.plight(313,402,2.3,0xffd8a8,0,4.5);   // hallL lights the guests so the dark glass mirrors them
 var lv={g:0.9,e:0,hg:0.9,he:0}, hiss=null, buzz=null, duel={on:false,t0:0,hs:false,pop:false}, away=0;
 function setLevels(g,e){ gasL.intensity=g; gasMat.emissiveIntensity=g; flameMat.opacity=Math.min(1,g/0.9); elecL.intensity=e; bulbMat.emissiveIntensity=e/1.4;
   if(hiss && Math.abs(g-lv.hg)>0.02){ hiss.set(0.012*g); lv.hg=g; } if(buzz && Math.abs(e-lv.he)>0.02){ buzz.set(0.008*e); lv.he=e; } lv.g=g; lv.e=e; }
@@ -278,21 +285,19 @@ trip(N.Gs3,N.Cs4,N.E4,4); trip(N.Gs3,N.Cs4,N.E4,4); trip(N.A3,N.Cs4,N.E4,2); tri
 RH.push(N.Gs3,N.Bs3,N.Fs4, N.Gs3,N.Cs4,N.E4, N.Gs3,N.Cs4,N.Ds4, N.Fs3,N.Bs3,N.Ds4);
 var piano={on:false,t:0,next:0,i:0}, waltz={on:false,t:0,next:0,b:0};
 
-// ---------- the Window: a Pepper's ghost behind the interior window ----------
-var petg=H.plane(0.9,1.2,new THREE.MeshBasicMaterial({color:0xcfe0ff,transparent:true,opacity:0.04,depthWrite:false,side:THREE.DoubleSide}),246,1.5,376,PI/4,G);
-var edge=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(0.9,1.2)),new THREE.LineBasicMaterial({color:0xcfe0ff,transparent:true,opacity:0.08}));
+// ---------- the receiving line: a Pepper's ghost in the middle of the parlor, seen through the long window ----------
+var petg=H.plane(1.5,1.4,new THREE.MeshBasicMaterial({color:0xcfe0ff,transparent:true,opacity:0.015,depthWrite:false,side:THREE.DoubleSide}),311,1.5,452,PI/4,G);
+var edge=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1.5,1.4)),new THREE.LineBasicMaterial({color:0xcfe0ff,transparent:true,opacity:0.05}));
 edge.position.copy(petg.position); edge.rotation.copy(petg.rotation); G.add(edge);
-var liner=new THREE.Mesh(new THREE.PlaneGeometry(1.1,H.WALL_H)); liner.position.set(222.3*SC,H.WALL_H/2,376*SC); liner.rotation.y=PI/2;
-mg([H.box(0.08,1.1,0.65,M.black,267,1.3,376),liner,H.floorPatch(222,362,272,390,M.black,0.004)],M.black);   // TV on its side behind the east jamb; the box lined black
 var hazeT=H.canvasTex(256,128,function(g,w,h){ var gr=g.createRadialGradient(w/2,h*0.55,4,w/2,h*0.55,w*0.55); gr.addColorStop(0,'rgba(255,200,130,1)'); gr.addColorStop(0.5,'rgba(190,110,50,0.5)'); gr.addColorStop(1,'rgba(0,0,0,0)');
   g.fillStyle=gr; g.fillRect(0,0,w,h); for(var i=0;i<16;i++){ var x=10+R()*(w-20), y=8+R()*h*0.45, r=3+R()*7, b=g.createRadialGradient(x,y,0,x,y,r);
     b.addColorStop(0,'rgba(255,240,200,0.9)'); b.addColorStop(1,'rgba(255,200,120,0)'); g.fillStyle=b; g.fillRect(x-r,y-r,2*r,2*r); } });
 var backdropMat=new THREE.MeshBasicMaterial({map:hazeT,transparent:true,opacity:0.08,blending:THREE.AdditiveBlending,depthWrite:false,fog:false});
-H.plane(2.0,1.2,backdropMat,246,1.3,362.8,0,G);
+H.plane(2.4,1.4,backdropMat,311,1.3,498,PI,G);
 var hostMat=H.holoMat(figureTex('angell'),0xcfe0ff), deanMat=H.holoMat(figureTex('lloyd'),0xe0e8ff);
-var host=H.plane(0.55,1.5,hostMat,238,1.15,372,0,G), dean=H.plane(0.55,1.6,deanMat,254,1.2,374,0,G);
-var win={armed:false,started:false,due:false,stage:0,t0:0};   // stage 1: A6 playing, 2: pause, 3: the Dean and A7, 4: Suite 1876 may open
-function armWindow(){ if(win.armed) return; win.armed=true; H.cap('The window in the alcove begins to glow.'); T(H.after(2.5,function(){ H.cap(''); })); T(H.fade(backdropMat,0.18,1.5)); }
+var host=H.plane(0.55,1.5,hostMat,300,1.15,468,PI,G), dean=H.plane(0.55,1.6,deanMat,322,1.2,472,PI,G);   // facing the window
+var win={armed:false,started:false,stage:0,t0:0,ta:0};   // stage 1: A6 playing, 2: pause, 3: the Dean and A7, 4: Suite 1876 may open
+function armWindow(){ if(win.armed) return; win.armed=true; win.ta=H.t; H.flash('A glow gathers in the middle of the parlor.',2.5); T(H.fade(backdropMat,0.18,1.5)); }
 function windowBeat(){ if(win.started) return; if(!win.armed){ win.armed=true; T(H.fade(backdropMat,0.18,1.5)); }
   win.started=true; win.stage=1; win.t0=H.t; H.line('A6'); T(H.fade(hostMat,0.85,1.5)); waltz.on=true; waltz.t=0; waltz.next=0; waltz.b=0; }
 function deanIn(){ win.stage=3; win.t0=H.t; T(H.fade(deanMat,0.85,1.5)); T(H.tween(1,function(p){ dean.scale.x=0.25+0.75*p; })); H.line('A7'); }
@@ -300,27 +305,27 @@ function winTick(){ var el=H.t-win.t0;   // each step waits for the line before 
   if(win.stage===1 && el>1 && (H.quiet() || el>2.6*H.lineDur('A6'))){ win.stage=2; T(H.after(0.5,deanIn)); }
   else if(win.stage===3 && el>1 && (H.quiet() || el>2.6*H.lineDur('A7'))){ win.stage=4; H.stay.angellDone=true;
     T(H.after(30,function(){ T(H.fade(hostMat,0,2)); T(H.fade(deanMat,0,2)); waltz.on=false; })); } }
-H.zone({x1:194,z1:392,x2:280,z2:420,once:false,when:function(){ return win.armed && !win.started; },enter:windowBeat});
 
-// ---------- mirror state machine: idle > wait > ghost > snap > done ----------
-function toGhost(){ mirror.state='ghost'; mirror.t=0; footGhost.visible=true; mirror.tw=T(H.lightTo(chamberL,0.5,2)); H.sfx.whisper({x:190,z:445}); }
-function slap(){ H.sfx.bang({x:190,z:445}); var gl=foot.userData.gloves; T(H.tween(0.14,function(p){ gl.position.z=0.08*Math.sin(p*PI); })); }
+// ---------- the glass: idle > pre (A4 finishing) > dim > ghost > snap > done ----------
+function toDim(){ mirror.state='dim'; mirror.t=0; H.sfx.tone(110,1.4,0.08,{glide:38,type:'sawtooth',x:266,z:470}); mirror.tw=T(H.lightTo(hallL,0.9,1.2)); }   // the new electric browns out
+function toGhost(){ mirror.state='ghost'; mirror.t=0; footGhost.visible=true; var p=H.player(); H.sfx.whisper({x:p.x,z:Math.max(392,p.z-12)}); }
+function slap(){ H.sfx.bang({x:foot.position.x/SC,z:420}); var gl=foot.userData.gloves; T(H.tween(0.14,function(p){ gl.position.z=0.05*Math.sin(p*PI); })); }
 function toSnap(){ mirror.state='snap'; mirror.t=0; if(mirror.tw) mirror.tw.dead=true;
-  setLevels(0,0.05); chamberL.intensity=1.6; mir.on=false; mir.mesh.visible=false; footGhost.visible=false;
-  foot.position.set(182*SC,0,clamp(H.player().z,441,449)*SC); foot.rotation.y=PI/2; foot.visible=true;   // both gloves stay inside the glass (z 435-455)
-  slap(); T(H.after(0.25,slap)); T(H.after(0.45,function(){ H.sfx.sting({x:190,z:445}); H.scare('MAY I TAKE YOUR COAT?',1.6); })); }
-function toDone(){ mirror.state='done'; away=0; T(H.lightTo(chamberL,0,0.4)); foot.visible=false; mir.mesh.visible=true; setLevels(0.6,0.8);
-  T(H.after(1,function(){ H.line('A5'); })); T(H.after(1+H.lineDur('A5')+1.5,armWindow)); T(H.after(25,function(){ win.due=true; })); }
+  setGlass(0); mir.on=false; footGhost.visible=false; hallL.intensity=0; setLevels(0,1.4);   // the parlor blazes, the mirror is a window again...
+  foot.position.set(clamp(H.player().x,290,336)*SC,0,428*SC); foot.rotation.y=PI; foot.visible=true;   // ...and he is on the other side of it, gloves on the glass (z 421)
+  slap(); T(H.after(0.25,slap)); T(H.after(0.45,function(){ H.sfx.sting({x:313,z:420}); H.scare('MAY I TAKE YOUR COAT?',1.6); })); }
+function toDone(){ mirror.state='done'; away=0; foot.visible=false; setLevels(0.6,0.8);
+  T(H.after(1,function(){ H.line('A5'); })); T(H.after(1+H.lineDur('A5')+1.5,armWindow)); }
 // after the show, the parlor banks its lights once the guest has gone (a glow for the look back from the doorway, then dark), and relights if they return
-function afterTick(dt){ away=H.inBox(190,388,350,545)?0:away+dt;
-  var far=away>2 && !H.inBox(190,340,350,545), tg=away<2?[0.6,0.8]:far?[0,0]:[0.15,0], k=Math.min(1,dt*1.5);
+function afterTick(dt){ away=inHall()?0:away+dt;
+  var far=away>2 && !H.inBox(260,330,365,425), tg=away<2?[0.6,0.8]:far?[0,0]:[0.15,0], k=Math.min(1,dt*1.5);
   var g=lv.g+(tg[0]-lv.g)*k, e=lv.e+(tg[1]-lv.e)*k; if(Math.abs(g-tg[0])<0.003) g=tg[0]; if(Math.abs(e-tg[1])<0.003) e=tg[1];
   if(g!==lv.g || e!==lv.e) setLevels(g,e);
   if(away>2) waltz.on=false;
   if(far && lv.g<0.01) stopLoops(); else if(away<2 && !hiss) startLoops(); }
 
-// the glass renders layer 6 only: this file's meshes, the lights, and the shell (floor, ceiling, walls, curtains, doors) around Room 1
-function roomLayer(){ var A=new THREE.Box3(new THREE.Vector3(186*SC,-1,386*SC),new THREE.Vector3(350*SC,9,545*SC)), b=new THREE.Box3(), size=new THREE.Vector3(), FO=1<<H.FEED_LAYER;
+// the glass renders layer 6 only: this file's meshes, the lights, and the shell (floor, ceiling, walls, curtains, doors) around Room 1 and the hallway
+function roomLayer(){ var A=new THREE.Box3(new THREE.Vector3(186*SC,-1,386*SC),new THREE.Vector3(365*SC,9,545*SC)), b=new THREE.Box3(), size=new THREE.Vector3(), FO=1<<H.FEED_LAYER;
   function on(o){ o.traverse(function(c){ if(c.layers.mask!==FO) c.layers.enable(RL); }); }   // feed-only figures (the Footman's ghost, the avatar) keep layer 5
   H.scene.updateMatrixWorld(true);
   H.scene.traverse(function(o){ if(o.isLight) o.layers.enable(RL); });   // every light, so the glass is lit exactly like the room
@@ -331,10 +336,11 @@ function roomLayer(){ var A=new THREE.Box3(new THREE.Vector3(186*SC,-1,386*SC),n
     if(c.isMesh || Math.max(size.x,size.z)<3) on(c); }); }   // other files' big content groups stay out of the glass
 
 H.onUpdate(function(dt,t){
-  mir.on=inRoom() && d1871.isOpen && mirror.state!=='snap';   // never behind a closed door
+  if(!begun && H.stay.checkedIn && inHall()){ begun=true; H.stay.suites['1871']=true; resetRoom(); delete H.stay.angellDone; pend=H.t; }
+  mir.on=(mirror.state==='dim' || mirror.state==='ghost') && inHall();
   if(pend!==null && (H.quiet() || H.t-pend>10)){ pend=null; show.go(); }
   if(win.stage) winTick();
-  if(win.due && !win.started && inRoom()) windowBeat();
+  if(win.armed && !win.started && inHall() && (H.heading(0,1) || H.t-win.ta>4)) windowBeat();   // once the guest looks back into the parlor
   if(duel.on){ var d=H.t-duel.t0, L=levelsAt(d);
     if(d>=7 && !duel.hs){ duel.hs=true; H.sfx.noise(0.7,3500,0.25,{type:'highpass',decay:1,x:266,z:470}); }
     if(d>=24 && !duel.pop){ duel.pop=true; piano.on=false; H.sfx.noise(0.08,2200,0.7,{x:266,z:480}); H.sfx.tone(160,0.3,0.12,{glide:50,x:266,z:480}); }
@@ -344,29 +350,31 @@ H.onUpdate(function(dt,t){
       if(lh){ H.sfx.tone(lh[0],lh[2],0.08,{type:'triangle',x:319,z:530}); H.sfx.tone(lh[1],lh[2],0.08,{type:'triangle',x:319,z:530}); }
       piano.i++; piano.next+=0.36; } }
   if(waltz.on){ waltz.t+=dt; if(waltz.t-waltz.next>1) waltz.next=waltz.t;
-    while(waltz.t>=waltz.next){ if(waltz.b%3===0) H.sfx.tone(196,0.38,0.03,{type:'triangle',x:246,z:376});
-      else { H.sfx.tone(247,0.3,0.03,{type:'triangle',x:246,z:376}); H.sfx.tone(294,0.3,0.03,{type:'triangle',x:246,z:376}); }
+    while(waltz.t>=waltz.next){ if(waltz.b%3===0) H.sfx.tone(196,0.38,0.03,{type:'triangle',x:311,z:470});
+      else { H.sfx.tone(247,0.3,0.03,{type:'triangle',x:311,z:470}); H.sfx.tone(294,0.3,0.03,{type:'triangle',x:311,z:470}); }
       waltz.b++; waltz.next+=0.4; } }
   if(hostMat.opacity>0) host.rotation.x=0.05*Math.sin(2.5*t);
-  chSconceMat.emissiveIntensity=chamberL.intensity*0.6;
   if(mirror.state==='done') afterTick(dt);
   if(mirror.state==='idle' || mirror.state==='done') return;
-  mirror.t+=(mirror.state!=='wait' || inRoom())?dt:0;   // the 12 s fallback only counts while the guest is in the room
-  if(mirror.state==='wait'){ if((H.inBox(196,424,300,470) && H.gaze(190.8,1.35,445,4.5,0.85)) || mirror.t>12) toGhost(); }
-  else if(mirror.state==='ghost'){ var p=H.player(); footGhost.position.set(clamp(p.x+20,200,296)*SC,0,clamp(p.z+(p.z<445?11:-11),432,458)*SC); footGhost.rotation.y=-PI/2; if(mirror.t>2.5) toSnap(); }
+  mirror.t+=dt;
+  if(mirror.state==='pre'){ if((H.quiet() && mirror.t>1) || mirror.t>9) toDim(); }
+  else if(mirror.state==='dim'){ var k=Math.min(1,mirror.t/1.4); setLevels(0,k<1?1.4*(1-k)*H.flick(mirror.t,2.5,0.6):0); setGlass(0.85*k);
+    if(mirror.t>1.8 && (H.heading(0,1) || mirror.t>6)) toGhost(); }   // the guests see themselves in the glass...
+  else if(mirror.state==='ghost'){ var p=H.player(), side=p.x>318?-1:1;   // ...and the Footman just behind them, in the reflection only
+    footGhost.position.set(clamp(p.x+side*12,286,340)*SC,0,clamp(p.z-11,395,410)*SC); footGhost.rotation.y=0; if(mirror.t>2.5) toSnap(); }
   else if(mirror.state==='snap' && mirror.t>1.5) toDone();
 });
 
 // ---------- reset and the show cue ----------
 function resetRoom(){ mine.forEach(function(w){ w.dead=true; }); mine.length=0;
   duel.on=false; duel.hs=duel.pop=false; piano.on=false; waltz.on=false; stopLoops(); away=0;
-  setLevels(0.9,0); chamberL.intensity=0;
-  mirror.state='idle'; mirror.t=0; mirror.tw=null; mir.mesh.visible=true; foot.visible=false; footGhost.visible=false; foot.userData.gloves.position.z=0;
-  hostMat.opacity=0; deanMat.opacity=0; dean.scale.x=1; host.rotation.x=0; backdropMat.opacity=0.08; win.armed=win.started=win.due=false; win.stage=0; }
+  setLevels(0.9,0); hallL.intensity=0; setGlass(0);
+  mirror.state='idle'; mirror.t=0; mirror.tw=null; foot.visible=false; footGhost.visible=false; foot.userData.gloves.position.z=0;
+  hostMat.opacity=0; deanMat.opacity=0; dean.scale.x=1; host.rotation.x=0; backdropMat.opacity=0.08; win.armed=win.started=false; win.stage=0; }
 var show=H.cue([[0,function(){ resetRoom(); delete H.stay.angellDone; H.line('A1'); piano.on=true; piano.t=0; piano.next=0; piano.i=0; startLoops(); }],
   [14,function(){ H.line('A2'); }], [25,function(){ H.line('A3'); }], [27,function(){ duel.t0=H.t; duel.on=true; }],
-  [52.5,function(){ H.line('A4'); }], [55,function(){ mirror.state='wait'; mirror.t=0; }]]);
-H.resets.push(function(){ d1871.close(); show.stop(); pend=null; resetRoom(); });
+  [52.5,function(){ H.line('A4'); }], [55,function(){ mirror.state='pre'; mirror.t=0; }]]);
+H.resets.push(function(){ begun=false; show.stop(); pend=null; resetRoom(); });
 var own=H.scene.children.slice(n0);   // this file's scene-level objects
-H.onBegin(function(){ roomLayer(); H.stations.forEach(function(s){ if(s.n===2){ s.name='Suite 1871 \u00B7 Angell'; s.desc='the night the house was wired \u00B7 watch the mirror, then the window'; } }); });
+H.onBegin(function(){ roomLayer(); H.stations.forEach(function(s){ if(s.n===2){ s.name='Suite 1871 \u00B7 Angell'; s.desc='the night the house was wired \u00B7 watch through the long window'; } }); });
 })();

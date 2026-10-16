@@ -47,7 +47,7 @@ A static site with no build step.
 - `js/three.min.js`: vendored Three.js r128, so there's no runtime CDN dependency
 - `js/engine.js`: the walkthrough engine, exposed as `window.HOTEL`. It covers rendering, the WebXR rig and controls, collision, spatial audio, trigger zones, the narrator, the HUD, the minimap, feeds and mirrors, and the bird's-eye view.
 - `js/hotel/building.js`: the real building (flow-map walls, window, elevator car, columns, dorm doors, fixtures seen in the Oct 2025 walkthrough video)
-- `js/hotel/route.js`: the guest route (stairs or accessible elevator → lobby → Rooms 1–4 → check-out), stations, and route arrows
+- `js/hotel/route.js`: the guest route (stairs or accessible elevator → lobby → Room 1 watched through its long window → Rooms 2–4 → check-out), stations, and route arrows
 - `js/hotel/<area>.js`: one file per area of the show
 - `vercel.json`: Vercel static-hosting config (clean URLs; only `three.min.js` is cached as immutable)
 

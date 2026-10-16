@@ -173,13 +173,14 @@ H.monitor = function(f,w,h,x,y,z,ry,o){ o=o||{};
     fragmentShader:'uniform sampler2D tex; uniform float t; uniform vec3 tint; varying vec2 vUv; void main(){ vec3 c=texture2D(tex,vUv).rgb; float g=dot(c,vec3(0.3,0.59,0.11));'+
       'float sl=0.82+0.18*sin(vUv.y*480.0+t*6.0); float n=fract(sin(dot(vUv*t,vec2(12.9898,78.233)))*43758.5453); gl_FragColor=vec4(tint*(g*1.35*sl+n*0.06),1.0); }'});
   var m=H.plane(w,h,mat,x,y,z,ry); f.screenMat=mat; return m; };
-// mirror on a wall: {x,z,y,w,h,ry (facing, as H.plane), res, tint, range}
+// mirror on a wall: {x,z,y,w,h,ry (facing, as H.plane), res, tint, range, alpha (true: blend by f.mat.uniforms.op, 0 clear .. 1 mirror)}
 var tmpV=[new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3(),new THREE.Vector3()], rotM=new THREE.Matrix4(), plane4=new THREE.Plane(), clip4=new THREE.Vector4(), q4=new THREE.Vector4();
 H.mirror = function(o){ var res=o.res||512, rt=new THREE.WebGLRenderTarget(res,res), tm=new THREE.Matrix4();
   var cam=new THREE.PerspectiveCamera(); cam.layers.enable(FEED);
-  var mat=new THREE.ShaderMaterial({uniforms:{tex:{value:rt.texture},tm:{value:tm},tint:{value:new THREE.Color(o.tint||0xc9cfd6)}},
+  var mat=new THREE.ShaderMaterial({uniforms:{tex:{value:rt.texture},tm:{value:tm},tint:{value:new THREE.Color(o.tint||0xc9cfd6)},op:{value:1}},
     vertexShader:'uniform mat4 tm; varying vec4 vP; void main(){ vP=tm*vec4(position,1.0); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-    fragmentShader:'uniform sampler2D tex; uniform vec3 tint; varying vec4 vP; void main(){ gl_FragColor=vec4(texture2DProj(tex,vP).rgb*tint,1.0); }'});
+    fragmentShader:'uniform sampler2D tex; uniform vec3 tint; uniform float op; varying vec4 vP; void main(){ gl_FragColor=vec4(texture2DProj(tex,vP).rgb*tint,op); }',
+    transparent:!!o.alpha, depthWrite:!o.alpha});
   var mesh=H.plane(o.w||0.8,o.h||1.2,mat,o.x,o.y==null?1.45:o.y,o.z,o.ry||0);
   var f={rt:rt,cam:cam,tex:rt.texture,every:o.every||1,n:0,x:o.x,z:o.z,range:o.range||7,on:true,mesh:mesh,mat:mat};
   f.update=function(view){   // Reflector-style virtual camera with an oblique near plane at the glass
@@ -377,7 +378,8 @@ H.party = (function(){ try{ return (new URLSearchParams(location.search).get('pa
 H.stay = {suites:{}};   // shared show state (which suites the party has opened, etc.)
 
 // hotel suite door in a wall opening (x1,z1)-(x2,z2) with a keycard reader.
-// o: {approach:+1|-1 (+1: guests stand on the right-hand side of x1->x2 as drawn on the north-up plan; a door drawn west->east with approach +1 is entered from the south), plate:[lines], num, ready(), onOpen(), autoClose:true}
+// o: {approach:+1|-1 (+1: guests stand on the right-hand side of x1->x2 as drawn on the north-up plan; a door drawn west->east with approach +1 is entered from the south), plate:[lines], num, ready(), onOpen(), autoClose:true,
+//     quiet:true (until ready(), only USE tries the door: for a door guests stand beside while another show plays)}
 // Opens on USE within 1.2 m while looking at it, after 1.5 s of looking, or after 4 s standing at it (so nobody gets stuck).
 H.suiteDoor = function(o){
   var dx=o.x2-o.x1, dz=o.z2-o.z1, Ls=Math.hypot(dx,dz), L=Ls*SC, ux=dx/Ls, uz=dz/Ls, nx=-uz, nz=ux, sgn=o.approach||1, th=-Math.atan2(dz,dx);
@@ -405,7 +407,7 @@ H.suiteDoor = function(o){
   H.onUpdate(function(dt){
     if(!d.isOpen){ var near=H.near(ax,az,1.0);
       d.gazeT=H.gaze(rx,1.12,rz,1.6,0.9)?d.gazeT+dt:0; d.dwellT=near?d.dwellT+dt:0;
-      if(d.gazeT>1.5 || d.dwellT>4) d.openDoor();
+      if((d.gazeT>1.5 || d.dwellT>4) && !(o.quiet && o.ready && !o.ready())) d.openDoor();
       if(!near && !H.near(mx,mz,2) && ringMat.color.getHex()===0xffb030){ d.setRing(0xf2efe6); d.warned=false; } }
     else if(o.autoClose!==false){ d.awayT=H.near(mx,mz,12)?0:d.awayT+dt; if(d.awayT>20) d.close(); }
     if(d.open!==d.target){ d.open+= (d.target>d.open?1:-1)*dt/1.2; d.open=Math.max(0,Math.min(1,d.open));

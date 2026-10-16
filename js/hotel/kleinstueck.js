@@ -52,8 +52,8 @@ function dKD(x,z){ return -(x-330)*0.4664+(z-262)*0.8845; }   // signed: + south
 
 // ---------- 1. structure ----------
 var G=H.cull(H.group(0,0),[[218,190,445,392],[328,180,462,250],[270,390,330,432],[440,284,476,362]]);   // + the doorway view from Room 1 and the look back from Suite 1912
-var d1876=H.suiteDoor({x1:318,z1:390,x2:280,z2:390,approach:-1,plate:['1876 · KLEINSTUECK'],num:'1876',
-  ready:function(){ return !!H.stay.angellDone; }, onOpen:function(){ show.go(); }});   // the doorway x 280-318; entered from Room 1's side; leaves swing north
+var d1876=H.suiteDoor({x1:280,z1:390,x2:318,z2:390,approach:1,quiet:true,plate:['1876 · KLEINSTUECK'],num:'1876',
+  ready:function(){ return !!H.stay.angellDone; }, onOpen:function(){ show.go(); }});   // the doorway x 280-318 at the end of the Suite 1871 hallway; plate and reader east of it; leaves swing north
 H.curtain(330,245,330,262);   // K2E: Room 2's east side below the wall
 H.curtain(330,262,440,320);   // KD: splits the two boardwalks (the way in, south; the pine lane back, north)
 var railMat=H.lam(0x6b5a44), railParts=[];
